@@ -26,7 +26,7 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/gowtham-sai-yadav/entangle/internal/cli.version={{ .Version }}
+      - -X github.com/sctg-development/entangle/internal/cli.version={{ .Version }}
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     ignore:
@@ -51,34 +51,10 @@ checksum:
   name_template: "SHA256SUMS.txt"
   algorithm: sha256
 
-# A Homebrew formula, not a cask. Casks quarantine their download, so macOS
-# Gatekeeper blocks our unsigned binary; formulas install CLI binaries without
-# quarantine and stage a bare binary correctly. Install with
-# `brew install gowtham-sai-yadav/tap/entangle` (no --cask).
-brews:
-  - name: entangle
-    # Only the current-name archive. Both archives carry the same binaries for
-    # the same OS/arch pairs, and a formula can install exactly one per pair -
-    # without this, GoReleaser cannot tell which and fails the whole release.
-    # Homebrew users are always installing fresh, so they get the current name.
-    ids: [raw]
-    repository:
-      owner: gowtham-sai-yadav
-      name: homebrew-tap
-      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/gowtham-sai-yadav/entangle"
-    description: "Hand a live coding session to anyone - Claude Code, Codex, or opencode"
-    license: "MIT"
-    commit_author:
-      name: goreleaser
-      email: noreply@users.noreply.github.com
-    test: |
-      system "#{bin}/entangle", "version"
-
 nfpms:
   - id: packages
     package_name: entangle
-    homepage: "https://github.com/gowtham-sai-yadav/entangle"
+    homepage: "https://github.com/sctg-development/entangle"
     description: "Hand a live coding session to anyone - Claude Code, Codex, or opencode"
     maintainer: "Gowtham Sai Yadav <noreply@users.noreply.github.com>"
     license: "MIT"
@@ -86,7 +62,7 @@ nfpms:
 
 release:
   github:
-    owner: gowtham-sai-yadav
+    owner: sctg-development
     name: entangle
   # Keep the auto-generated notes from commits.
   mode: replace
