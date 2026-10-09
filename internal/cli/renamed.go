@@ -57,6 +57,6 @@ func noticeIfLegacyName() {
 	}
 	fmt.Fprintf(os.Stderr,
 		"note: %s is now called %s. This command still works; to switch over, run:\n"+
-			"      brew install gowtham-sai-yadav/tap/%s     (or) curl -fsSL https://gowthamsai.in/install.sh | sh\n\n",
+			"      brew install gowtham-sai-yadav/tap/%s     (or) curl -fsSL https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.sh | sh\n\n",
 		LegacyBinaryName, BinaryName, BinaryName)
 }

@@ -8,9 +8,9 @@ Claude Code, Codex, and opencode.
 
 Encrypted, no account, three spoken words.
 
-[![CI](https://github.com/gowtham-sai-yadav/entangle/actions/workflows/ci.yml/badge.svg)](https://github.com/gowtham-sai-yadav/entangle/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/gowtham-sai-yadav/entangle?sort=semver)](https://github.com/gowtham-sai-yadav/entangle/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gowtham-sai-yadav/entangle)](https://goreportcard.com/report/github.com/gowtham-sai-yadav/entangle)
+[![CI](https://github.com/sctg-development/entangle/actions/workflows/ci.yml/badge.svg)](https://github.com/sctg-development/entangle/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sctg-development/entangle?sort=semver)](https://github.com/sctg-development/entangle/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sctg-development/entangle)](https://goreportcard.com/report/github.com/sctg-development/entangle)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <img src="docs/demo.gif" alt="typing entangle opens the cockpit: Claude Code, Codex and opencode sessions interleaved in one list, filtered a tool at a time, then a hand-off preview and the three-word code a teammate reads back" width="820">
@@ -54,19 +54,19 @@ anonymous once-a-day check for a new release, which sends nothing about you and
 macOS and Linux:
 
 ```bash
-curl -fsSL https://gowthamsai.in/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.sh | sh
 ```
 
 With Homebrew:
 
 ```bash
-brew install gowtham-sai-yadav/tap/entangle
+brew install sctg-development/tap/entangle
 ```
 
 Windows (PowerShell):
 
 ```powershell
-irm https://gowthamsai.in/install.ps1 | iex
+irm https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.ps1 | iex
 ```
 
 Each one fetches the right prebuilt binary, verifies its checksum, and puts it on your PATH. Confirm with `entangle version`.
@@ -77,17 +77,17 @@ Each one fetches the right prebuilt binary, verifies its checksum, and puts it o
 **With Go:**
 
 ```bash
-go install github.com/gowtham-sai-yadav/entangle@latest
+go install github.com/sctg-development/entangle@latest
 ```
 
 This installs into `$(go env GOPATH)/bin` (usually `~/go/bin`). If the command is not found afterward, that folder is not on your PATH yet: `echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc`.
 
-**Direct download:** grab the file for your machine from the [latest release](https://github.com/gowtham-sai-yadav/entangle/releases/latest) (`...-darwin-arm64` for Apple Silicon, `-darwin-amd64` for Intel Macs, `-linux-amd64`, or `-windows-amd64.exe`), then on macOS/Linux `chmod +x` it and move it onto your PATH.
+**Direct download:** grab the file for your machine from the [latest release](https://github.com/sctg-development/entangle/releases/latest) (`...-darwin-arm64` for Apple Silicon, `-darwin-amd64` for Intel Macs, `-linux-amd64`, or `-windows-amd64.exe`), then on macOS/Linux `chmod +x` it and move it onto your PATH.
 
 **From source:**
 
 ```bash
-git clone https://github.com/gowtham-sai-yadav/entangle
+git clone https://github.com/sctg-development/entangle
 cd entangle && go build -o entangle .
 ```
 
@@ -137,10 +137,10 @@ If they do not have entangle, you do not have to talk them through installing it
 Run these from inside your copy of the project
 (skip the first line if you already have entangle):
 
-  curl -fsSL https://gowthamsai.in/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.sh | sh
   entangle receive 6-pioneer-village
 
-Windows PowerShell: irm https://gowthamsai.in/install.ps1 | iex
+Windows PowerShell: irm https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.ps1 | iex
 ```
 
 Received sessions attach to the directory they are run in, and every file path in the conversation is rewritten to match. That is why it says to run it from inside their copy of the project. From the wrong folder it still imports, but the paths in it point at files that are not there.
@@ -220,7 +220,7 @@ claude --resume
 
 Prefer to stay in VS Code? The [entangle extension](vscode/) adds the same actions to the Command Palette, a status-bar button, and a sidebar: send a session by code, receive one, share to a file, or browse your sessions. It drives the CLI under the hood and offers to install it for you on first use.
 
-It is not on the VS Code marketplace yet ([#41](https://github.com/gowtham-sai-yadav/entangle/issues/41)). Until it is, run it from this repo: open `vscode/` in VS Code and press <kbd>F5</kbd>. The CLI above is the supported way in.
+It is not on the VS Code marketplace yet ([#41](https://github.com/sctg-development/entangle/issues/41)). Until it is, run it from this repo: open `vscode/` in VS Code and press <kbd>F5</kbd>. The CLI above is the supported way in.
 
 ## Updating
 
@@ -353,7 +353,7 @@ Quantum teleportation needs two things that are useless apart: a link between tw
 
 Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, what CI checks, where each package lives, and the promises the code has to keep. The architecture and the reasoning behind it are in [DESIGN.md](DESIGN.md).
 
-Looking for something to pick up? [`help wanted`](https://github.com/gowtham-sai-yadav/entangle/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) is unclaimed work, and [`good first issue`](https://github.com/gowtham-sai-yadav/entangle/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) is where to start if you are new here.
+Looking for something to pick up? [`help wanted`](https://github.com/sctg-development/entangle/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) is unclaimed work, and [`good first issue`](https://github.com/sctg-development/entangle/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) is where to start if you are new here.
 
 ```bash
 go build -o /tmp/entangle .   # the main package is the repo root

@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"text/tabwriter"
@@ -145,8 +146,12 @@ func dispatch(args []string) error {
 		return runShare(args[1:])
 	case "send":
 		return runSend(args[1:])
+	case "send-file":
+		return runSendFile(args[1:])
 	case "receive":
 		return runReceive(args[1:])
+	case "receive-file":
+		return runReceiveFile(args[1:])
 	case "update", "upgrade":
 		return runUpdate(args[1:])
 	case "gui":
@@ -160,7 +165,7 @@ func dispatch(args []string) error {
 		printHelp()
 		return nil
 	default:
-		return fmt.Errorf("unknown command %q (try: tui, sessions, send, receive, share, export, import)", args[0])
+		return fmt.Errorf("unknown command %q (try: tui, sessions, send, send-file, receive, receive-file, share, export, import)", args[0])
 	}
 }
 
@@ -176,7 +181,9 @@ func printHelp() {
 		"  entangle sessions [--tool all|claude-code|codex|opencode|kilo|cline] [--project P] [--config-dir DIR] [--json]\n" +
 		"  entangle share   <session-id-prefix | --last> [--tool T] [--project P] [--out FILE] [--with-context] [--no-redact] [--yes]\n" +
 		"  entangle send    <session-id-prefix | --last> [--tool T] [--project P] [--with-context] [--no-redact] [--yes]\n" +
+		"  entangle send-file  <file> [--output NAME] [--rendezvous URL] [--relay HOST] [--code-words N] [--timeout D]\n" +
 		"  entangle receive <code> [--config-dir DIR] [--map OLD=NEW]... [--yes]\n" +
+		"  entangle receive-file  <code> [--output NAME] [--yes] [--rendezvous URL] [--relay HOST] [--timeout D]\n" +
 		"  entangle update  [--check] [--yes]\n" +
 		"  entangle gui     [bundle] [--port N]\n\n" +
 		"SESSIONS, SHARE and SEND cover every coding agent on this machine by default -\n" +
@@ -1295,4 +1302,164 @@ func runInspect(args []string) error {
 		fmt.Printf("  - %s  [%d session(s)]\n", path, p.Sessions)
 	}
 	return nil
+}
+
+const maxBytes = 2 << 30 // 2 GiB hard ceiling, matching runReceive
+
+const fileTooLargeThreshold = 100 << 20 // 100 MiB
+
+// runSendFile reads an arbitrary file and streams it to a teammate over an
+// end-to-end-encrypted wormhole connection, identified by a short spoken code.
+// It reuses the same transfer plumbing as `send`.
+func runSendFile(args []string) error {
+	fs := flag.NewFlagSet("send-file", flag.ContinueOnError)
+	output := fs.String("output", "", "name to offer the file as (default: source filename)")
+	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
+	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
+	words := fs.Int("code-words", 2, "number of words in the transfer code")
+	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the peer does not connect within this time")
+	yes := fs.Bool("yes", false, "skip the confirmation prompt")
+	pos, err := parseInterleaved(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(pos) < 1 {
+		return fmt.Errorf("usage: entangle send-file <file> [flags]")
+	}
+	src := pos[0]
+
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return fmt.Errorf("%s is a directory, not a file. Send a .tgz bundle with entangle send instead", src)
+	}
+
+	sendName := *output
+	if sendName == "" {
+		sendName = filepath.Base(src)
+	}
+
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	if !*yes && !confirmSendFile(src, sendName, info.Size()) {
+		fmt.Println("Aborted - nothing was sent.")
+		return nil
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	ctx, cancel := context.WithTimeout(ctx, *timeout)
+	defer cancel()
+
+	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words}
+	fmt.Println("Preparing a secure transfer...")
+	err = transfer.Send(ctx, tcfg, sendName, data,
+		printFileSendCode(sendName),
+		progressPrinter("Sending"),
+	)
+	if err != nil {
+		return fmt.Errorf("send failed: %w", err)
+	}
+	fmt.Println("\nDone. The file is on your teammate's machine.")
+	return nil
+}
+
+// printFileSendCode is what a file sender reads off the screen. It points the
+// receiver at receive-file rather than receive, since the payloads differ.
+func printFileSendCode(filename string) func(string) {
+	return func(code string) {
+		fmt.Printf("\nGive your teammate this code:\n\n    %s\n\n", code)
+		fmt.Println("They run this on the machine that should receive the file:")
+		fmt.Printf("    %s\n\n", handoff.FileCommand(code))
+		fmt.Println("If they do not have entangle yet, paste them this instead:")
+		fmt.Println(handoff.FileInvite(code))
+		fmt.Println("\nWaiting for them to connect... (press Ctrl-C to cancel)")
+	}
+}
+
+// confirmSendFile shows what is about to leave the machine and asks to proceed.
+func confirmSendFile(src, sendName string, size int64) bool {
+	fmt.Println("About to send ONE file over an end-to-end-encrypted connection:")
+	fmt.Printf("  source  : %s\n", src)
+	fmt.Printf("  name    : %s\n", sendName)
+	fmt.Printf("  size    : %s\n", exporter.HumanSize(size))
+	if size > fileTooLargeThreshold {
+		fmt.Printf("  note    : file is large (%s); it will be held in memory during the transfer\n",
+			exporter.HumanSize(size))
+	}
+	return confirm("Send it?")
+}
+
+// runReceiveFile pulls a single file over a wormhole connection and writes it
+// to disk. It reuses the same transfer plumbing as `receive` but skips the
+// bundle/import step entirely.
+func runReceiveFile(args []string) error {
+	fs := flag.NewFlagSet("receive-file", flag.ContinueOnError)
+	output := fs.String("output", "", "output filename (default: the name offered by the sender)")
+	yes := fs.Bool("yes", false, "overwrite the destination without asking")
+	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
+	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
+	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the transfer does not start within this time")
+	pos, err := parseInterleaved(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(pos) < 1 {
+		return fmt.Errorf("usage: entangle receive-file <code>")
+	}
+	code := pos[0]
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	ctx, cancel := context.WithTimeout(ctx, *timeout)
+	defer cancel()
+
+	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay}
+	fmt.Println("Connecting...")
+	in, err := transfer.Receive(ctx, tcfg, code)
+	if err != nil {
+		return fmt.Errorf("receive failed: %w", err)
+	}
+
+	dest := *output
+	if dest == "" {
+		dest = in.Name
+		if dest == "" {
+			return fmt.Errorf("no filename offered by the sender and no --output given")
+		}
+	}
+	if !*yes && fileExists(dest) {
+		if !confirm(fmt.Sprintf("Overwrite %s?", dest)) {
+			fmt.Println("Aborted - nothing was written.")
+			return nil
+		}
+	}
+
+	f, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	tmpPath := f.Name()
+	done, err := copyCapped(f, in, in.Bytes, maxBytes, progressPrinter("Receiving"))
+	if cerr := f.Close(); err == nil && cerr != nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("receive failed: %w", err)
+	}
+	fmt.Printf("\nWrote %s (%s)\n", dest, exporter.HumanSize(done))
+	return nil
+}
+
+// fileExists checks whether a path is present without following symlinks, so
+// an existing file is never silently clobbered.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

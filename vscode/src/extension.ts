@@ -21,7 +21,7 @@ import * as path from 'path';
 
 const pexecFile = promisify(execFile);
 
-const REPO = 'gowtham-sai-yadav/entangle';
+const REPO = 'sctg-development/entangle';
 // The extension calls `sessions --json`, added in this version, so anything
 // older is treated as unusable and a newer build is fetched instead.
 const MIN_VERSION: [number, number, number] = [0, 5, 1];

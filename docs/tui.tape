@@ -30,7 +30,7 @@ Set Theme "TokyoNight"
 
 # --- hidden setup: build the binary and seed a clean demo history ---
 Hide
-Type "go build -ldflags=-X=github.com/gowtham-sai-yadav/entangle/internal/cli.version=$(git describe --tags --abbrev=0 | sed 's/^v//') -o /tmp/entangle-demo . && DEMO_CODEX_HOME=/tmp/entangle-demo-codex DEMO_OPENCODE_DB=/tmp/entangle-demo-oc.db bash docs/demo-seed.sh /tmp/entangle-demo-home && clear"
+Type "go build -ldflags=-X=github.com/sctg-development/entangle/internal/cli.version=$(git describe --tags --abbrev=0 | sed 's/^v//') -o /tmp/entangle-demo . && DEMO_CODEX_HOME=/tmp/entangle-demo-codex DEMO_OPENCODE_DB=/tmp/entangle-demo-oc.db bash docs/demo-seed.sh /tmp/entangle-demo-home && clear"
 Enter
 Sleep 5s
 Show

@@ -2,7 +2,7 @@
 
 Hand a live coding session to a teammate over an encrypted code, or share it to a file, without leaving the editor. [Claude Code](https://claude.com/claude-code), [OpenAI Codex CLI](https://github.com/openai/codex) and [opencode](https://github.com/anomalyco/opencode) sessions are all listed together and shared the same way.
 
-This extension is a thin front-end over the [`entangle`](https://github.com/gowtham-sai-yadav/entangle) CLI. It adds IDE commands and a session picker; the CLI does all the work, so there is nothing to keep in sync and your data never leaves your machine except through the CLI's own end-to-end-encrypted transfer.
+This extension is a thin front-end over the [`entangle`](https://github.com/sctg-development/entangle) CLI. It adds IDE commands and a session picker; the CLI does all the work, so there is nothing to keep in sync and your data never leaves your machine except through the CLI's own end-to-end-encrypted transfer.
 
 ## Requirements
 
@@ -11,8 +11,8 @@ The extension drives the `entangle` CLI (v0.5.1+). You do not have to install it
 Prefer to manage it yourself? Install it and it will be used automatically:
 
 ```bash
-curl -fsSL https://gowthamsai.in/install.sh | sh      # macOS / Linux
-brew install gowtham-sai-yadav/tap/entangle    # Homebrew
+curl -fsSL https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.sh | sh      # macOS / Linux
+brew install sctg-development/tap/entangle    # Homebrew
 ```
 
 Or point **`entangle.path`** at a specific binary in Settings.

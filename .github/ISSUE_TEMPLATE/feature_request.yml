@@ -24,7 +24,7 @@ body:
       label: Before you file
       options:
         - label: >
-            I checked [DESIGN.md](https://github.com/gowtham-sai-yadav/entangle/blob/main/DESIGN.md)
+            I checked [DESIGN.md](https://github.com/sctg-development/entangle/blob/main/DESIGN.md)
             and the README's "What moves, and what doesn't"
           required: false
         - label: I searched existing issues

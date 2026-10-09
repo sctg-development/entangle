@@ -3,7 +3,7 @@
   "displayName": "entangle",
   "description": "Hand a live coding session to a teammate over an encrypted code, or share it to a file. Works with Claude Code, Codex and opencode, without leaving VS Code.",
   "version": "0.1.0",
-  "publisher": "gowtham-sai-yadav",
+  "publisher": "sctg-development",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
@@ -22,11 +22,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/gowtham-sai-yadav/entangle"
+    "url": "https://github.com/sctg-development/entangle"
   },
   "homepage": "https://gowthamsai.in/entangle/",
   "bugs": {
-    "url": "https://github.com/gowtham-sai-yadav/entangle/issues"
+    "url": "https://github.com/sctg-development/entangle/issues"
   },
   "activationEvents": [
     "onStartupFinished"

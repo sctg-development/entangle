@@ -9,22 +9,22 @@ what broke before you write code for it.
 - **New behaviour, a new flag, or anything that changes what lands on disk.** Open an
   issue first. entangle writes into people's real `~/.claude`, and a design decided
   after the code exists usually means throwing the code away.
-- **Issues labelled [`help wanted`](https://github.com/gowtham-sai-yadav/entangle/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)** are free to take. Leave a comment so two people
+- **Issues labelled [`help wanted`](https://github.com/sctg-development/entangle/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)** are free to take. Leave a comment so two people
   don't start the same thing.
 - **Issues assigned to me** are already in progress. Comment if you want to argue about
   the design, but please don't build them. You would be racing code you cannot see yet.
 - **A question rather than a bug?** Use
-  [Discussions](https://github.com/gowtham-sai-yadav/entangle/discussions).
+  [Discussions](https://github.com/sctg-development/entangle/discussions).
 
 Found a security problem? Don't open an issue. Email the address on
-[my profile](https://github.com/gowtham-sai-yadav).
+[my profile](https://github.com/sctg-development).
 
 ## Setup
 
 Go 1.26 or newer. Nothing else: no code generation, no external services.
 
 ```bash
-git clone https://github.com/gowtham-sai-yadav/entangle
+git clone https://github.com/sctg-development/entangle
 cd entangle
 go build -o /tmp/entangle .    # the main package is the repo root, not ./cmd/...
 /tmp/entangle sessions

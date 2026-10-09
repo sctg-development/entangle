@@ -1,6 +1,6 @@
 # entangle installer for Windows (PowerShell).
 #
-#   irm https://raw.githubusercontent.com/gowtham-sai-yadav/entangle/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/sctg-development/entangle/main/install.ps1 | iex
 #
 # Downloads the prebuilt Windows binary from the latest GitHub release, verifies
 # its SHA-256 checksum, installs it under %LOCALAPPDATA%, and adds it to your
@@ -10,7 +10,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$repo    = "gowtham-sai-yadav/entangle"
+$repo    = "sctg-development/entangle"
 $binary  = "entangle"
 $version = if ($env:VERSION) { $env:VERSION } else { "latest" }
 $asset   = "$binary-windows-amd64.exe"   # amd64 build runs on Windows arm64 via emulation

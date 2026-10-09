@@ -19,8 +19,8 @@ const (
 	// InstallSh and InstallPS1 are the published one-line installers. The scripts
 	// themselves are install.sh and install.ps1 in this repo; these URLs are where
 	// they are served from, and are what a person can actually be told to run.
-	InstallSh  = "https://gowthamsai.in/install.sh"
-	InstallPS1 = "https://gowthamsai.in/install.ps1"
+	InstallSh  = "https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.sh"
+	InstallPS1 = "https://raw.githubusercontent.com/sctg-development/entangle/refs/heads/main/install.ps1"
 )
 
 // Command is the bare command the receiver runs once they already have entangle.
@@ -40,4 +40,22 @@ func Invite(code string) string {
   %s
 
 Windows PowerShell: irm %s | iex`, InstallSh, Command(code), InstallPS1)
+}
+
+// FileCommand is the bare command a file-receiver runs once they already have
+// entangle. It points at receive-file rather than receive.
+func FileCommand(code string) string {
+	return "entangle receive-file " + code
+}
+
+// FileInvite is the install-and-receive message for a file transfer, the
+// file-receiver equivalent of Invite. It omits the "from inside your copy of
+// the project" wording since arbitrary files have no project directory.
+func FileInvite(code string) string {
+	return fmt.Sprintf(`Get entangle first (skip if you already have it):
+
+  curl -fsSL %s | sh
+  %s
+
+Windows PowerShell: irm %s | iex`, InstallSh, FileCommand(code), InstallPS1)
 }
