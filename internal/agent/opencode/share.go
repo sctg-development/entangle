@@ -35,7 +35,11 @@ func (p Provider) Pack(r agent.Roots, s agent.Session, opts agent.PackOptions) (
 	// Its own --sanitize is deliberately not used: it replaces whole fields with
 	// placeholders, which would strip the conversation the receiver needs. Our
 	// scrubbing masks only what looks like a secret and leaves the text intact.
-	raw, err := runCmd(bin, "export", s.ID)
+	db := ""
+	if ref, ok := s.Ref.(Ref); ok {
+		db = ref.DBPath
+	}
+	raw, err := p.runCLI(db, bin, "export", s.ID)
 	if err != nil {
 		return nil, fmt.Errorf("%s export: %w", p.DisplayName(), err)
 	}

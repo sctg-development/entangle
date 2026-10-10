@@ -17,6 +17,13 @@ var kiloVariant = variant{
 	dataDir: []string{".local", "share", "kilo"},
 	dbFile:  "kilo.db",
 	prefix:  "agents/kilo/",
+	// The VS Code extension and the terminal CLI can run on different release
+	// channels, and each channel has its own database (kilo.db,
+	// kilo-keypool-live.db, ...). `kilo db` only ever reads the one its own
+	// channel selects, so sessions made in one place vanished from the other.
+	// Read every database and point the CLI at each explicitly.
+	dbEnv:  "KILO_DB",
+	dbGlob: "kilo*.db",
 }
 
 func init() { agent.Register(Provider{v: &kiloVariant}) }

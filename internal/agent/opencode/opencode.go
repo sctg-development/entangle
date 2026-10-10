@@ -41,6 +41,9 @@ import (
 const (
 	KeyBinary = "opencodeBinary" // absolute path to the opencode executable
 	KeyDBPath = "opencodeDB"     // absolute path to opencode.db
+	// KeyDBPaths lists every database to read, separated by the OS path-list
+	// separator. It is a superset of KeyDBPath.
+	KeyDBPaths = "opencodeDBs"
 )
 
 const (
@@ -80,10 +83,19 @@ func execRunner(bin string, args ...string) ([]byte, error) {
 // execRunnerIn is execRunner with a working directory, which is how opencode is
 // told which project an imported session belongs to.
 func execRunnerIn(dir, bin string, args ...string) ([]byte, error) {
+	return execRunnerEnv(nil, dir, bin, args...)
+}
+
+// execRunnerEnv adds extra environment variables, which is how a specific
+// database is selected for one call.
+func execRunnerEnv(env []string, dir, bin string, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = dir
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
@@ -109,6 +121,12 @@ type variant struct {
 	dataDir []string // data directory, relative to home
 	dbFile  string   // database file name inside dataDir
 	prefix  string   // bundle prefix, which must be unique per tool
+	// dbEnv names the environment variable that points the CLI at a database
+	// file, and dbGlob matches every database file in dataDir. Both are set only
+	// for tools that keep several databases side by side (see kilo.go); empty
+	// means the CLI's own choice is used as-is.
+	dbEnv  string
+	dbGlob string
 }
 
 var opencodeVariant = variant{
@@ -161,6 +179,7 @@ func (p Provider) Locate(override string) (agent.Roots, bool, error) {
 
 	if override != "" {
 		roots.Extra[KeyDBPath] = override
+		roots.Extra[KeyDBPaths] = override
 		return roots, true, nil
 	}
 
@@ -170,11 +189,13 @@ func (p Provider) Locate(override string) (agent.Roots, bool, error) {
 	db := filepath.Join(dataDir, v.dbFile)
 	if fi, statErr := os.Stat(db); statErr == nil && !fi.IsDir() {
 		roots.Extra[KeyDBPath] = db
+		roots.Extra[KeyDBPaths] = joinDBs(db, siblingDBs(dataDir, v))
 		return roots, true, nil
 	}
 	if resolved, rerr := askDBPath(bin); rerr == nil && resolved != "" {
 		if fi, statErr := os.Stat(resolved); statErr == nil && !fi.IsDir() {
 			roots.Extra[KeyDBPath] = resolved
+			roots.Extra[KeyDBPaths] = joinDBs(resolved, siblingDBs(dataDir, v))
 			return roots, true, nil
 		}
 	}
@@ -214,7 +235,39 @@ func (p Provider) ListSessions(r agent.Roots) ([]agent.Session, error) {
 	if bin == "" {
 		return nil, nil // opencode is not installed; nothing to list
 	}
-	raw, err := runQuery(bin, listQuery)
+	dbs := splitDBs(r.Get(KeyDBPaths))
+	if len(dbs) == 0 {
+		dbs = []string{r.Get(KeyDBPath)}
+	}
+	var out []agent.Session
+	seen := map[string]bool{}
+	var firstErr error
+	for _, db := range dbs {
+		sessions, err := p.listOne(bin, db)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		for _, s := range sessions {
+			if !seen[s.ID] {
+				seen[s.ID] = true
+				out = append(out, s)
+			}
+		}
+	}
+	if len(out) == 0 && firstErr != nil {
+		return nil, firstErr
+	}
+	agent.SortSessions(out)
+	agent.AssignShortIDs(out, shortIDMin)
+	return out, nil
+}
+
+// listOne lists the sessions of a single database ("" means the CLI's default).
+func (p Provider) listOne(bin, db string) ([]agent.Session, error) {
+	raw, err := p.runQueryIn(bin, db, listQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -248,15 +301,62 @@ func (p Provider) ListSessions(r agent.Roots) ([]agent.Session, error) {
 			ModTime:  msToTime(row.TimeUpdated),
 			// Size is left zero: a session is rows in a shared database, so it has
 			// no file size, and inventing one would be a lie in the listing.
-			Ref: Ref{Binary: bin, DBPath: r.Get(KeyDBPath), Created: msToTime(row.TimeCreated)},
+			Ref: Ref{Binary: bin, DBPath: db, Created: msToTime(row.TimeCreated)},
 		})
 	}
-	agent.SortSessions(out)
-	// opencode ids embed a descending timestamp so that sessions sort newest-first
-	// lexically, which means siblings share a long prefix - the same hazard Codex
-	// has. Grow each handle until it is unique.
-	agent.AssignShortIDs(out, shortIDMin)
 	return out, nil
+}
+
+// dbEnvFor returns the environment that points the CLI at db, or nil when the
+// variant has no such switch or no specific database is wanted.
+func (p Provider) dbEnvFor(db string) []string {
+	if db == "" || p.variant().dbEnv == "" {
+		return nil
+	}
+	return []string{p.variant().dbEnv + "=" + db}
+}
+
+// runCLI runs the CLI against a specific database. With no database selection it
+// is exactly runCmd.
+func (p Provider) runCLI(db, bin string, args ...string) ([]byte, error) {
+	if env := p.dbEnvFor(db); env != nil {
+		return execRunnerEnv(env, "", bin, args...)
+	}
+	return runCmd(bin, args...)
+}
+
+func (p Provider) runQueryIn(bin, db, sql string) ([]byte, error) {
+	out, err := p.runCLI(db, bin, "db", sql, "--format", "json")
+	if err != nil {
+		return nil, fmt.Errorf("opencode db failed: %w", err)
+	}
+	return out, nil
+}
+
+// siblingDBs returns the other databases of variants that keep several.
+func siblingDBs(dataDir string, v variant) []string {
+	if v.dbGlob == "" {
+		return nil
+	}
+	m, _ := filepath.Glob(filepath.Join(dataDir, v.dbGlob))
+	return m
+}
+
+func joinDBs(first string, rest []string) string {
+	all := []string{first}
+	for _, d := range rest {
+		if d != first {
+			all = append(all, d)
+		}
+	}
+	return strings.Join(all, string(os.PathListSeparator))
+}
+
+func splitDBs(s string) []string {
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, string(os.PathListSeparator))
 }
 
 // runQuery executes one SQL statement through the opencode CLI.
