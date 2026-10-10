@@ -27,7 +27,7 @@ current.
 
 `entangle send` and `entangle receive` speak the
 [magic-wormhole](https://magic-wormhole.readthedocs.io/) protocol through
-[wormhole-william](https://github.com/psanford/wormhole-william).
+[wormhole-william](https://github.com/sctg-development/wormhole-william).
 
 - The short code you read aloud is turned into a shared key by SPAKE2, a
   password-authenticated key exchange. The code itself never crosses the

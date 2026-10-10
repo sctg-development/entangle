@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/psanford/wormhole-william/rendezvous/rendezvousservertest"
+	"github.com/sctg-development/wormhole-william/rendezvous/rendezvousservertest"
 )
 
 // TestSendReceiveRoundTrip stands up an in-process rendezvous server and moves a

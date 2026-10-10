@@ -9,11 +9,9 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/klauspost/compress v1.17.11
-	github.com/psanford/wormhole-william v1.0.8
+	github.com/sctg-development/wormhole-william v1.0.10
 	golang.org/x/term v0.27.0
 )
-
-replace github.com/psanford/wormhole-william => /tmp/wormhole-william
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect

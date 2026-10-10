@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/psanford/wormhole-william/rendezvous/rendezvousservertest"
+	"github.com/sctg-development/wormhole-william/rendezvous/rendezvousservertest"
 )
 
 // A completed wormhole transfer needs the two peers to reach each other directly,

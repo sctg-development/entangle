@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/psanford/wormhole-william/rendezvous/rendezvousservertest"
+	"github.com/sctg-development/wormhole-william/rendezvous/rendezvousservertest"
 )
 
 const payload = "a shared session's bytes"

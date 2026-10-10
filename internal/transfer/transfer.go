@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/psanford/wormhole-william/wormhole"
+	"github.com/sctg-development/wormhole-william/wormhole"
 )
 
 // AppID namespaces our transfers on the rendezvous server. Because two clients
