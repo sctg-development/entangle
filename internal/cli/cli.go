@@ -1478,15 +1478,15 @@ func getWordlistGenerator(wordlistArg string) func(int) string {
 	case "eff":
 		wl, err := wordlist.LoadEFF("eff_large_wordlist.txt")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: could not load EFF wordlist: %v (using default)\n", err)
-			return nil
+			fmt.Fprintf(os.Stderr, "warning: could not load EFF wordlist: %v (using embedded)\n", err)
+			return wordlist.EmbeddedEFF().ChooseWords
 		}
 		return wl.ChooseWords
 	case "fr", "french":
 		wl, err := wordlist.LoadFrench("diceware-fr-5-jets.txt")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: could not load French wordlist: %v (using default)\n", err)
-			return nil
+			fmt.Fprintf(os.Stderr, "warning: could not load French wordlist: %v (using embedded)\n", err)
+			return wordlist.EmbeddedFrench().ChooseWords
 		}
 		return wl.ChooseWords
 	case "":
