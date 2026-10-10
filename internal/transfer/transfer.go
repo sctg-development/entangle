@@ -78,6 +78,13 @@ type Config struct {
 	TransitRelay  string // transit relay host:port; "" = public default
 	CodeWords     int    // words in the generated code (minimum 2)
 
+	// WordlistGenerator is an optional function to generate passphrase words.
+	// If nil, the default 256-word wordlist is used.
+	// Can be set to use EFF or French diceware:
+	//   WordlistGenerator: wordlist.LoadEFF("path/to/eff_large_wordlist.txt").ChooseWords
+	//   WordlistGenerator: wordlist.LoadFrench("path/to/diceware-fr-5-jets.txt").ChooseWords
+	WordlistGenerator func(int) string
+
 	// NoFallback disables the automatic retry over TLS/443 when the default
 	// mailbox cannot be reached. It has no effect when RendezvousURL is set,
 	// because an explicit choice of server is always honoured as given.
@@ -110,6 +117,9 @@ func (c Config) client() *wormhole.Client {
 	}
 	if c.CodeWords >= 2 {
 		cl.PassPhraseComponentLength = c.CodeWords
+	}
+	if c.WordlistGenerator != nil {
+		cl.WordlistGenerator = c.WordlistGenerator
 	}
 	return cl
 }

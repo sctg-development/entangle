@@ -13,6 +13,8 @@ require (
 	golang.org/x/term v0.27.0
 )
 
+replace github.com/psanford/wormhole-william => /tmp/wormhole-william
+
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.1 // indirect

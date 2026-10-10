@@ -35,6 +35,7 @@ import (
 	"github.com/gowtham-sai-yadav/entangle/internal/tui"
 	"github.com/gowtham-sai-yadav/entangle/internal/updater"
 	"github.com/gowtham-sai-yadav/entangle/internal/webui"
+	"github.com/gowtham-sai-yadav/entangle/internal/wordlist"
 	"golang.org/x/term"
 )
 
@@ -841,6 +842,7 @@ func runSend(args []string) error {
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	words := fs.Int("code-words", 2, "number of words in the transfer code")
+	wordlistFlag := fs.String("wordlist", envOr("ENTANGLE_WORDLIST", ""), "wordlist to use: eff, fr (French), or path to custom wordlist file")
 	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the peer does not connect within this time")
 	tool := fs.String("tool", "", toolFlagUsage("send from"))
 	pos, err := parseInterleaved(fs, args)
@@ -910,7 +912,9 @@ func runSend(args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, *timeout)
 	defer cancel()
 
-	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words}
+	wlGen := getWordlistGenerator(*wordlistFlag)
+
+	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words, WordlistGenerator: wlGen}
 	fmt.Println("Preparing a secure transfer...")
 	err = transfer.Send(ctx, tcfg, sendName, buf.Bytes(),
 		printSendCode,
@@ -1317,6 +1321,7 @@ func runSendFile(args []string) error {
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	words := fs.Int("code-words", 2, "number of words in the transfer code")
+	wordlistFlag := fs.String("wordlist", envOr("ENTANGLE_WORDLIST", ""), "wordlist to use: eff, fr (French), or path to custom wordlist file")
 	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the peer does not connect within this time")
 	yes := fs.Bool("yes", false, "skip the confirmation prompt")
 	pos, err := parseInterleaved(fs, args)
@@ -1356,7 +1361,9 @@ func runSendFile(args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, *timeout)
 	defer cancel()
 
-	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words}
+	wlGen := getWordlistGenerator(*wordlistFlag)
+
+	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words, WordlistGenerator: wlGen}
 	fmt.Println("Preparing a secure transfer...")
 	err = transfer.Send(ctx, tcfg, sendName, data,
 		printFileSendCode(sendName),
@@ -1462,4 +1469,39 @@ func runReceiveFile(args []string) error {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// getWordlistGenerator returns a wordlist generator function based on the
+// wordlist flag value. Returns nil to use the default wordlist.
+func getWordlistGenerator(wordlistArg string) func(int) string {
+	switch wordlistArg {
+	case "eff":
+		wl, err := wordlist.LoadEFF("eff_large_wordlist.txt")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: could not load EFF wordlist: %v (using default)\n", err)
+			return nil
+		}
+		return wl.ChooseWords
+	case "fr", "french":
+		wl, err := wordlist.LoadFrench("diceware-fr-5-jets.txt")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: could not load French wordlist: %v (using default)\n", err)
+			return nil
+		}
+		return wl.ChooseWords
+	case "":
+		return nil // use default
+	default:
+		// Treat as custom path - try EFF format first, then French
+		wl, err := wordlist.LoadEFF(wordlistArg)
+		if err == nil {
+			return wl.ChooseWords
+		}
+		wl, err = wordlist.LoadFrench(wordlistArg)
+		if err == nil {
+			return wl.ChooseWords
+		}
+		fmt.Fprintf(os.Stderr, "warning: could not load wordlist from %s: %v (using default)\n", wordlistArg, err)
+		return nil
+	}
 }
