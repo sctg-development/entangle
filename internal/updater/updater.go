@@ -24,7 +24,7 @@ import (
 )
 
 // DefaultRepo is the GitHub repository releases are pulled from.
-const DefaultRepo = "gowtham-sai-yadav/entangle"
+const DefaultRepo = "sctg-development/entangle"
 
 func client() *http.Client { return &http.Client{Timeout: 60 * time.Second} }
 
