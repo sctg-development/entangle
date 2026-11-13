@@ -2,22 +2,59 @@ package wordlist
 
 import (
 	"crypto/rand"
+	_ "embed"
 	"encoding/csv"
 	"io"
 	"os"
 	"strings"
 )
 
-// EmbeddedEFF returns the embedded EFF wordlist
-func EmbeddedEFF() *Wordlist {
-	words := strings.Split(strings.TrimSpace(effWordlistData), "\n")
-	return &Wordlist{Words: words}
+//go:embed data/en.txt
+var enData string
+
+//go:embed data/fr.txt
+var frData string
+
+//go:embed data/de.txt
+var deData string
+
+//go:embed data/es.txt
+var esData string
+
+//go:embed data/it.txt
+var itData string
+
+//go:embed data/pt.txt
+var ptData string
+
+func parse(data string) *Wordlist {
+	return &Wordlist{Words: strings.Fields(data)}
 }
 
-// EmbeddedFrench returns the embedded French wordlist
-func EmbeddedFrench() *Wordlist {
-	words := strings.Split(strings.TrimSpace(frenchWordlistData), "\n")
-	return &Wordlist{Words: words}
+// EmbeddedEFF returns the embedded EFF (English) wordlist.
+func EmbeddedEFF() *Wordlist { return parse(enData) }
+
+// EmbeddedFrench returns the embedded French wordlist.
+func EmbeddedFrench() *Wordlist { return parse(frData) }
+
+// Embedded returns the embedded wordlist for a language code
+// (en, fr, de, es, it, pt). ok is false for unsupported codes.
+func Embedded(lang string) (*Wordlist, bool) {
+	switch lang {
+	case "en":
+		return EmbeddedEFF(), true
+	case "fr":
+		return EmbeddedFrench(), true
+	case "de":
+		return parse(deData), true
+	case "es":
+		return parse(esData), true
+	case "it":
+		return parse(itData), true
+	case "pt":
+		return parse(ptData), true
+	}
+	return nil, false
 }
 
 // Wordlist represents a wordlist for generating passphrases

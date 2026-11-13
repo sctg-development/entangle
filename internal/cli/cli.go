@@ -842,7 +842,7 @@ func runSend(args []string) error {
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	words := fs.Int("code-words", 2, "number of words in the transfer code")
-	wordlistFlag := fs.String("wordlist", envOr("ENTANGLE_WORDLIST", ""), "wordlist to use: eff, fr (French), or path to custom wordlist file")
+	wordlistFlag := fs.String("wordlist", envOr("ENTANGLE_WORDLIST", ""), "wordlist to use: en, fr, de, es, it, pt, or path to custom wordlist file")
 	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the peer does not connect within this time")
 	tool := fs.String("tool", "", toolFlagUsage("send from"))
 	pos, err := parseInterleaved(fs, args)
@@ -1321,7 +1321,7 @@ func runSendFile(args []string) error {
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	words := fs.Int("code-words", 2, "number of words in the transfer code")
-	wordlistFlag := fs.String("wordlist", envOr("ENTANGLE_WORDLIST", ""), "wordlist to use: eff, fr (French), or path to custom wordlist file")
+	wordlistFlag := fs.String("wordlist", envOr("ENTANGLE_WORDLIST", ""), "wordlist to use: en, fr, de, es, it, pt, or path to custom wordlist file")
 	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the peer does not connect within this time")
 	yes := fs.Bool("yes", false, "skip the confirmation prompt")
 	pos, err := parseInterleaved(fs, args)
@@ -1474,23 +1474,12 @@ func fileExists(path string) bool {
 // getWordlistGenerator returns a wordlist generator function based on the
 // wordlist flag value. Returns nil to use the default wordlist.
 func getWordlistGenerator(wordlistArg string) func(int) string {
+	if wl, ok := wordlist.ForName(wordlistArg); ok {
+		return wl.ChooseWords // embedded in the binary, no file needed
+	}
 	switch wordlistArg {
-	case "eff":
-		wl, err := wordlist.LoadEFF("eff_large_wordlist.txt")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: could not load EFF wordlist: %v (using embedded)\n", err)
-			return wordlist.EmbeddedEFF().ChooseWords
-		}
-		return wl.ChooseWords
-	case "fr", "french":
-		wl, err := wordlist.LoadFrench("diceware-fr-5-jets.txt")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: could not load French wordlist: %v (using embedded)\n", err)
-			return wordlist.EmbeddedFrench().ChooseWords
-		}
-		return wl.ChooseWords
 	case "":
-		return nil // use default
+		return wordlist.Auto().ChooseWords // locale-based embedded list
 	default:
 		// Treat as custom path - try EFF format first, then French
 		wl, err := wordlist.LoadEFF(wordlistArg)

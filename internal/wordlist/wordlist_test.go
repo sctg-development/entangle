@@ -36,39 +36,37 @@ func TestEmbeddedEFF(t *testing.T) {
 	}
 }
 
-func TestEmbeddedFrench(t *testing.T) {
-	wl := EmbeddedFrench()
-	if wl == nil {
-		t.Fatal("EmbeddedFrench returned nil")
-	}
-	if len(wl.Words) < 7000 {
-		t.Errorf("French wordlist has %d words, expected at least 7000", len(wl.Words))
-	}
-	// Check a few known words
-	expected := []string{"a", "ab", "abat", "abats", "abatte"}
-	for _, exp := range expected {
-		found := false
+func TestEmbeddedLanguages(t *testing.T) {
+	want := map[string]int{"en": 7776, "fr": 7775, "de": 7776, "es": 8192, "it": 8192, "pt": 7776}
+	for lang, n := range want {
+		wl, ok := Embedded(lang)
+		if !ok {
+			t.Fatalf("%s: not embedded", lang)
+		}
+		if len(wl.Words) != n {
+			t.Errorf("%s: %d words, want %d", lang, len(wl.Words), n)
+		}
+		seen := map[string]bool{}
 		for _, w := range wl.Words {
-			if w == exp {
-				found = true
-				break
+			if len(w) < 3 || strings.Trim(w, "abcdefghijklmnopqrstuvwxyz-") != "" {
+				t.Errorf("%s: bad word %q", lang, w)
 			}
-		}
-		if !found {
-			t.Errorf("French wordlist missing expected word: %s", exp)
-		}
-	}
-	// Ensure no empty words
-	for _, w := range wl.Words {
-		if w == "" {
-			t.Error("French wordlist contains empty word")
+			if seen[w] {
+				t.Errorf("%s: duplicate word %q", lang, w)
+			}
+			seen[w] = true
 		}
 	}
-	// Ensure no punctuation-only words
-	for _, w := range wl.Words {
-		if strings.ContainsAny(w, "=;:!@#$%^&*()_+[]{}|\\\"'<>,.?/0123456789") && !strings.ContainsAny(w, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-			t.Errorf("French wordlist contains invalid word: %s", w)
+}
+
+func TestForName(t *testing.T) {
+	for _, n := range []string{"eff", "fr", "German", "español", "it", "pt-br"} {
+		if _, ok := ForName(n); !ok {
+			t.Errorf("ForName(%q) not found", n)
 		}
+	}
+	if _, ok := ForName("/tmp/x.txt"); ok {
+		t.Error("path must not resolve")
 	}
 }
 
@@ -87,8 +85,8 @@ func TestLoadFrenchWithEmptyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadFrench(\"\") returned error: %v", err)
 	}
-	if len(wl.Words) < 7000 {
-		t.Errorf("LoadFrench(\"\") has %d words, expected at least 7000", len(wl.Words))
+	if len(wl.Words) != 7775 {
+		t.Errorf("LoadFrench(\"\") has %d words, expected 7775", len(wl.Words))
 	}
 }
 

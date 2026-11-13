@@ -133,7 +133,7 @@ entangle send <id>
 
 ```bash
 entangle send <id> --wordlist=eff      # EFF diceware (English, 7776 words)
-entangle send <id> --wordlist=fr       # French diceware (7436 words)
+entangle send <id> --wordlist=fr       # French diceware (7775 words)
 entangle send <id> --wordlist=custom.txt  # custom wordlist file
 ```
 
@@ -276,26 +276,26 @@ Import runs on the destination, so it detects the OS and translates everything, 
 
 `entangle send` and `entangle send-file` generate a short spoken code by picking random words from a wordlist. Three built-in wordlists are included in the binary, so no external files are needed:
 
-| Wordlist | Flag | Words | Entropy (2 words) | Use case |
-|----------|------|-------|-------------------|----------|
-| Default | (none) | 256 | 16 bits | Compatible with all wormhole clients |
-| EFF diceware (English) | `--wordlist=eff` | 7,776 | ~25.8 bits | English speakers, highest entropy |
-| French diceware | `--wordlist=fr` | 7,436 | ~25.7 bits | French speakers |
+| Wordlist | Flag | Words | Entropy (2 words) |
+|----------|------|-------|-------------------|
+| English (EFF diceware) | `--wordlist=en` (or `eff`) | 7,776 | ~25.8 bits |
+| French | `--wordlist=fr` | 7,775 | ~25.8 bits |
+| German | `--wordlist=de` | 7,776 | ~25.8 bits |
+| Spanish | `--wordlist=es` | 8,192 | 26 bits |
+| Italian | `--wordlist=it` | 8,192 | 26 bits |
+| Portuguese | `--wordlist=pt` | 7,776 | ~25.8 bits |
+
+All lists are embedded in the binary: no external files to install. When no
+wordlist is requested (no `--wordlist`, no `ENTANGLE_WORDLIST`), entangle picks
+one from your system language (`LC_ALL`/`LANG`, macOS preferences, Windows
+locale) and falls back to English. Sources and licenses: `internal/wordlist/NOTICE.md`.
 
 ```bash
-# EFF diceware (English, recommended)
-entangle send <id> --wordlist=eff
-
-# French diceware
-entangle send <id> --wordlist=fr
-
-# Custom wordlist file (tab-separated: number\tword)
-entangle send <id> --wordlist=/path/to/wordlist.txt
+entangle send <id> --wordlist=de                  # force German
+entangle send <id> --wordlist=/path/to/list.txt   # custom file (tab-separated: number\tword)
 ```
 
-The receiver does not need `--wordlist`; the code itself determines which wordlist was used. The default 256-word list is compatible with every magic-wormhole implementation. EFF and French diceware provide significantly more entropy (~25.8 bits vs 16 bits) and are embedded in the binary—no external files required.
-
-You can also set `ENTANGLE_DEFAULT_WORDLIST=eff` or `ENTANGLE_DEFAULT_WORDLIST=fr` in your shell config to make the high-entropy wordlist the default.
+The receiver does not need `--wordlist`; the sender generates the code. Set `ENTANGLE_WORDLIST` (e.g. `fr`) in your shell config to override the automatic choice.
 
 <details>
 <summary>Is it safe, and how does it work?</summary>
@@ -326,8 +326,8 @@ entangle inspect  <bundle>
 entangle verify   [--config-dir DIR]
 entangle sessions [--tool T] [--project P] [--config-dir DIR] [--json]
 entangle share    <session-id | --last> [--tool T] [--project P] [--out FILE] [--with-context] [--no-redact] [--yes]
-entangle send     <session-id | --last> [--tool T] [--project P] [--with-context] [--no-redact] [--rendezvous URL] [--relay HOST:PORT] [--wordlist eff|fr|custom.txt] [--yes]
-entangle send-file <file> [--output NAME] [--rendezvous URL] [--relay HOST:PORT] [--wordlist eff|fr|custom.txt] [--yes]
+entangle send     <session-id | --last> [--tool T] [--project P] [--with-context] [--no-redact] [--rendezvous URL] [--relay HOST:PORT] [--wordlist en|fr|de|es|it|pt|custom.txt] [--yes]
+entangle send-file <file> [--output NAME] [--rendezvous URL] [--relay HOST:PORT] [--wordlist en|fr|de|es|it|pt|custom.txt] [--yes]
 entangle receive  <code> [--config-dir DIR] [--map OLD=NEW]... [--rendezvous URL] [--relay HOST:PORT] [--yes]
 entangle receive-file <code> [--output NAME] [--rendezvous URL] [--relay HOST:PORT] [--yes]
 entangle update   [--check] [--yes]
@@ -349,7 +349,7 @@ entangle gui      [bundle] [--port N]
 
 `--tool` takes `claude-code`, `codex`, `opencode`, `kilo`, `cline`, or `all`. It defaults to `all`, so you rarely need it: `sessions` shows every agent on the machine, and `share`/`send` work out which one an id belongs to. Pass it when you want a listing narrowed to a single tool.
 
-`inspect` shows what is inside a bundle. `verify` checks the sessions already on this machine are resume-ready (Claude Code only, like `export`). `send`/`receive` use the public magic-wormhole servers by default; point them at your own with `--rendezvous`/`--relay` or the `ENTANGLE_RENDEZVOUS`/`ENTANGLE_RELAY` environment variables. `ENTANGLE_WORDLIST` sets the default wordlist for `send` and `send-file` (e.g., `eff`, `fr`, or a path). `ENTANGLE_NO_UPDATE_CHECK=1` silences the [release check](#updating).
+`inspect` shows what is inside a bundle. `verify` checks the sessions already on this machine are resume-ready (Claude Code only, like `export`). `send`/`receive` use the public magic-wormhole servers by default; point them at your own with `--rendezvous`/`--relay` or the `ENTANGLE_RENDEZVOUS`/`ENTANGLE_RELAY` environment variables. `ENTANGLE_WORDLIST` sets the default wordlist for `send` and `send-file` (e.g., `en`, `fr`, `de`, `es`, `it`, `pt`, or a path). `ENTANGLE_NO_UPDATE_CHECK=1` silences the [release check](#updating).
 
 </details>
 

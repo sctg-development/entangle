@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gowtham-sai-yadav/entangle/internal/wordlist"
 	"github.com/sctg-development/wormhole-william/wormhole"
 )
 
@@ -118,8 +119,12 @@ func (c Config) client() *wormhole.Client {
 	if c.CodeWords >= 2 {
 		cl.PassPhraseComponentLength = c.CodeWords
 	}
+	// The library calls WordlistGenerator unconditionally, so it must never be
+	// nil. Default to the embedded list matching the user's locale.
 	if c.WordlistGenerator != nil {
 		cl.WordlistGenerator = c.WordlistGenerator
+	} else {
+		cl.WordlistGenerator = wordlist.Auto().ChooseWords
 	}
 	return cl
 }
