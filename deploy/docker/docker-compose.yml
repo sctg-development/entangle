@@ -6,7 +6,7 @@
 #   docker compose --profile tls --profile web up -d   # + browser page on https://$WORMHOLE_DOMAIN/
 #
 # Uses the public images docker.io/sctg/wormhole-{mailbox,relay} (amd64 + arm64).
-# To build them yourself from ./Dockerfile instead:
+# To build them (and the page, from ../web) yourself instead:
 #   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 services:
   mailbox:
@@ -32,12 +32,12 @@ services:
     security_opt: ["no-new-privileges:true"]
     mem_limit: 128m
 
-  # Browser client (send/receive without installing anything). Built from ../web.
+  # Browser client (send/receive without installing anything), public image
+  # docker.io/sctg/wormhole-page (amd64 + arm64). Sources: ../web.
   # Same origin as the mailbox: Caddy routes /v1 to the mailbox, everything else here.
   web:
     profiles: [web]
-    build: {context: ../web, dockerfile: Containerfile}
-    image: ${WORMHOLE_WEB_IMAGE:-entangle/wormhole-web:local}
+    image: ${WORMHOLE_WEB_IMAGE:-docker.io/sctg/wormhole-page:latest}
     restart: unless-stopped
     environment:
       TRANSIT_RELAY: relay:4001

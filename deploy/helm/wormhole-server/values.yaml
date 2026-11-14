@@ -21,9 +21,10 @@ relay:
     annotations: {}
 
 # Optional browser page (send/receive in the browser, link to entangle).
-# Build the image from deploy/web (Containerfile) and push it to your registry first.
+# Public image docker.io/sctg/wormhole-page (sources: deploy/web). Needs ingress.enabled
+# to be reachable: /v1 goes to the mailbox, everything else to the page.
 page:
-  enabled: false
+  enabled: true
   image: docker.io/sctg/wormhole-page:latest
   # Wormhole AppID; must match the entangle clients' --app-id.
   appId: github.com/sctg-development/entangle

@@ -56,11 +56,13 @@ newer entangle with `--app-id` (see the main README).
 Same host for everything: route `/v1` to the mailbox, all other paths to this page.
 
 - **Docker Compose:** `docker compose --profile tls --profile web up -d` in `deploy/docker`.
-- **Helm:** `--set page.enabled=true` (build and push the image first, see below).
-- **Argo CD:** uncomment the `page:` block in `deploy/argocd/application.yaml`.
+- **Helm:** enabled by default (`page.enabled`).
+- **Argo CD:** enabled in `deploy/argocd/application.yaml`.
 
-Build the image (Rust server and WebAssembly are compiled inside; SRI hashes are
-injected):
+The public multi-arch image is `docker.io/sctg/wormhole-page` (tags `latest`,
+`0.8`, `0.8.1`), published by `.github/workflows/web-image.yml` on each release
+tag. To build it yourself (Rust server and WebAssembly are compiled inside; SRI
+hashes are injected):
 
 ```bash
 docker build -f Containerfile -t wormhole-page deploy/web

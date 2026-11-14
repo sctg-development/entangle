@@ -52,6 +52,7 @@ helm install wormhole deploy/helm/wormhole-server \
   --set ingress.host=wormhole.example.org \
   --set-json 'ingress.annotations={"cert-manager.io/cluster-issuer":"letsencrypt"}' \
   --set relay.service.type=LoadBalancer
+# add --set page.enabled=false to skip the browser page
 ```
 
 The mailbox runs as one replica with a 1 Gi volume (SQLite). The relay is
@@ -84,15 +85,21 @@ them as hardened systemd services under a dedicated `wormhole` user (data in
 `/var/lib/wormhole`), and opens the ports in `ufw` if it is active. Re-run to
 upgrade; `sudo ./install.sh --uninstall` removes it.
 
-## Optional: browser page
+## Browser page
 
 [`web/`](web/README.md) is a browser client for the same servers, so a teammate
 without entangle can receive a bundle or send a file from a web page, and gets a
-link to the latest entangle release. It is served on the same host as the
-mailbox (`/v1` to the mailbox, everything else to the page). Enable it with the
-`web` profile in Docker Compose, `page.enabled=true` in the Helm chart, or the
-`page:` block of the Argo CD application. The page shares entangle's default wormhole AppID (v0.8.1+); see
-[`web/README.md`](web/README.md#meeting-entangle-the-appid) for older entangle versions.
+link to the latest entangle release. It uses the public image
+`docker.io/sctg/wormhole-page` (amd64 + arm64) and is served on the same host as
+the mailbox: `/v1` goes to the mailbox, everything else to the page.
+
+- **Docker Compose:** add `--profile web` (together with `--profile tls`, which
+  provides the single HTTPS host).
+- **Helm / Argo CD:** enabled by default (`page.enabled`, needs `ingress.enabled`);
+  set `page.enabled=false` to deploy only the servers.
+
+The page shares entangle's default wormhole AppID (v0.8.1+); see
+[`web/README.md`](web/README.md#meeting-entangle-the-appid) for older versions.
 
 ## Checking it works
 
