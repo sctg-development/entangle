@@ -39,6 +39,7 @@ jobs:
       context: ${{ matrix.context }}
       image: ${{ matrix.image }}
       build-args: ${{ matrix.build-args }}
+      cleanup: false
       # unique per image: it names the digest artifacts and the build cache scope
       artifact-prefix: ${{ matrix.prefix }}-${{ github.run_id }}
       tags: |
