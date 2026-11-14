@@ -60,7 +60,7 @@ Same host for everything: route `/v1` to the mailbox, all other paths to this pa
 - **Argo CD:** enabled in `deploy/argocd/application.yaml`.
 
 The public multi-arch image is `docker.io/sctg/wormhole-page` (tags `latest`,
-`0.8`, `0.8.1`), published by `.github/workflows/web-image.yml` on each release
+`0.8`, `0.8.1`), published by `.github/workflows/docker-image.yml` on each release
 tag. To build it yourself (Rust server and WebAssembly are compiled inside; SRI
 hashes are injected):
 
