@@ -69,26 +69,43 @@ async function initWasm() {
 function updateEncryptionBadge() {}
 
 // --- Speed calculation ---
+// Throughput over a sliding window (the last few seconds), so it shows the current
+// rate and not the average since the start of the transfer.
+const SPEED_WINDOW_MS = 3000;
+let speedSamples = [];          // [{ t: ms, bytes: total so far }]
 let speedBytes = 0;
-let speedStart = 0;
 
 function resetSpeed() {
   speedBytes = 0;
-  speedStart = performance.now();
+  speedSamples = [{ t: performance.now(), bytes: 0 }];
 }
 
 function addSpeedBytes(n) {
   speedBytes += n;
+  speedSamples.push({ t: performance.now(), bytes: speedBytes });
+  const cutoff = performance.now() - SPEED_WINDOW_MS;
+  while (speedSamples.length > 2 && speedSamples[1].t < cutoff) speedSamples.shift();
 }
 
+// Current rate as a string such as "85.3 MB/s", or null while there is not enough data.
 function getSpeed() {
-  const elapsed = (performance.now() - speedStart) / 1000;
+  if (speedSamples.length === 0) return null;
+  const first = speedSamples[0];
+  const elapsed = (performance.now() - first.t) / 1000;
   if (elapsed < 0.5) return null;
-  const bytesPerSec = speedBytes / elapsed;
+  const bytesPerSec = (speedBytes - first.bytes) / elapsed;
   if (bytesPerSec < 1024 * 1024) {
     return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
   }
   return (bytesPerSec / (1024 * 1024)).toFixed(1) + ' MB/s';
+}
+
+// Human-readable size for messages (the React UI does not provide one to this file).
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
 }
 
 // --- Filename sanitization ---
@@ -575,6 +592,16 @@ async function wasmReceive(code, callbacks) {
     // instead of hitting the save-file picker / triggering a download.
     const inlineText = filesize <= MAX_INLINE_TEXT_SIZE && looksLikeTextFile(filename);
     onFileInfo(filename, filesize);
+
+    // Refuse before accepting: once accepted, the transfer starts flowing and closing
+    // the receiver afterwards makes the sender fail with "broken pipe".
+    const MAX_BLOB_BEFORE_ACCEPT = 512 * 1024 * 1024;
+    if (!inlineText && !('showSaveFilePicker' in window) && filesize > MAX_BLOB_BEFORE_ACCEPT) {
+      onError('File too large for this browser (' + formatSize(filesize) +
+        '). Use Chrome or Edge for files over 512 MB, or use the entangle command line.');
+      try { receiver.close(); } catch (_) {}
+      return;
+    }
 
     await receiver.accept();
 

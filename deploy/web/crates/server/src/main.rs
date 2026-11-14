@@ -103,7 +103,7 @@ fn ws_origin(url: &str) -> Option<String> {
 /// Build the full Content-Security-Policy from a connect-src value.
 fn build_csp(connect_src: &str) -> Option<HeaderValue> {
     let csp = format!(
-        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src {connect_src}; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src {connect_src}; img-src 'self' data:; font-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     );
     HeaderValue::from_str(&csp).ok()
 }

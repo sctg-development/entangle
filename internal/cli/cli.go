@@ -1080,15 +1080,80 @@ func confirmSend(preview exporter.SharePreview) bool {
 // A failure of both servers still reports itself, which is when it matters.
 
 // progressPrinter returns a progress callback that rewrites a single status
-// line on stderr.
+// line on stderr: percentage, bytes, current throughput and the estimated time
+// left. The throughput is measured over a sliding window, so it reflects the
+// current rate rather than the average since the start.
 func progressPrinter(label string) transfer.Progress {
+	meter := newRateMeter(time.Now)
 	return func(done, total int64) {
+		rate := meter.Observe(done)
 		if total <= 0 {
-			fmt.Fprintf(os.Stderr, "\r%s %s   ", label, exporter.HumanSize(done))
+			fmt.Fprintf(os.Stderr, "\r%s %s  %s   ", label, exporter.HumanSize(done), formatRate(rate))
 			return
 		}
 		pct := float64(done) / float64(total) * 100
-		fmt.Fprintf(os.Stderr, "\r%s %3.0f%% (%s / %s)   ", label, pct, exporter.HumanSize(done), exporter.HumanSize(total))
+		fmt.Fprintf(os.Stderr, "\r%s %3.0f%% (%s / %s)  %s  ETA %s   ",
+			label, pct, exporter.HumanSize(done), exporter.HumanSize(total),
+			formatRate(rate), formatETA(total-done, rate))
+	}
+}
+
+// rateWindow is how far back the throughput estimate looks.
+const rateWindow = 3 * time.Second
+
+// rateMeter estimates the current transfer rate from recent samples.
+type rateMeter struct {
+	now     func() time.Time
+	samples []rateSample
+}
+
+type rateSample struct {
+	at    time.Time
+	bytes int64
+}
+
+func newRateMeter(now func() time.Time) *rateMeter {
+	return &rateMeter{now: now}
+}
+
+// Observe records the number of bytes done so far and returns the bytes per
+// second over the last rateWindow (0 until there is enough data).
+func (m *rateMeter) Observe(done int64) float64 {
+	t := m.now()
+	m.samples = append(m.samples, rateSample{at: t, bytes: done})
+	cutoff := t.Add(-rateWindow)
+	for len(m.samples) > 2 && m.samples[1].at.Before(cutoff) {
+		m.samples = m.samples[1:]
+	}
+	first := m.samples[0]
+	elapsed := t.Sub(first.at).Seconds()
+	if elapsed < 0.5 {
+		return 0
+	}
+	return float64(done-first.bytes) / elapsed
+}
+
+// formatRate renders bytes per second, e.g. "85.3 MB/s"; "" when unknown.
+func formatRate(bytesPerSec float64) string {
+	if bytesPerSec <= 0 {
+		return ""
+	}
+	return exporter.HumanSize(int64(bytesPerSec)) + "/s"
+}
+
+// formatETA renders the time left, e.g. "7s", "2m05s", "1h03m"; "--" when unknown.
+func formatETA(remaining int64, bytesPerSec float64) string {
+	if bytesPerSec <= 0 || remaining <= 0 {
+		return "--"
+	}
+	secs := int64(float64(remaining)/bytesPerSec + 0.5)
+	switch {
+	case secs < 60:
+		return fmt.Sprintf("%ds", secs)
+	case secs < 3600:
+		return fmt.Sprintf("%dm%02ds", secs/60, secs%60)
+	default:
+		return fmt.Sprintf("%dh%02dm", secs/3600, (secs%3600)/60)
 	}
 }
 
