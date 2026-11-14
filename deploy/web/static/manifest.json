@@ -1,0 +1,16 @@
+{
+  "name": "Wormhole",
+  "short_name": "Wormhole",
+  "description": "End-to-end encrypted file transfer",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#228be6",
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

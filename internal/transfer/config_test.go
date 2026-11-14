@@ -31,3 +31,14 @@ func TestConfigClient(t *testing.T) {
 		t.Errorf("CodeWords < 2 should be left unset, got %d", d.PassPhraseComponentLength)
 	}
 }
+
+// TestConfigAppIDOverride checks that --app-id / ENTANGLE_APP_ID can replace the
+// built-in AppID (needed to meet the web page, which uses another one).
+func TestConfigAppIDOverride(t *testing.T) {
+	if got := (Config{AppID: "example.org/other"}).client().AppID; got != "example.org/other" {
+		t.Errorf("override ignored: %q", got)
+	}
+	if got := (Config{}).client().AppID; got != AppID {
+		t.Errorf("default changed: %q", got)
+	}
+}

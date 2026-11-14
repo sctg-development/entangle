@@ -3,12 +3,14 @@
 #   cp .env.example .env     # edit WORMHOLE_DOMAIN
 #   docker compose up -d                       # plain: mailbox :4000, relay :4001
 #   docker compose --profile tls up -d         # + Caddy: wss://$WORMHOLE_DOMAIN (Let's Encrypt)
+#   docker compose --profile tls --profile web up -d   # + browser page on https://$WORMHOLE_DOMAIN/
 #
-# Images are built from ./Dockerfile; set WORMHOLE_*_IMAGE to use prebuilt ones.
+# Uses the public images docker.io/sctg/wormhole-{mailbox,relay} (amd64 + arm64).
+# To build them yourself from ./Dockerfile instead:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 services:
   mailbox:
-    build: {context: ., target: mailbox}
-    image: ${WORMHOLE_MAILBOX_IMAGE:-entangle/wormhole-mailbox:local}
+    image: ${WORMHOLE_MAILBOX_IMAGE:-docker.io/sctg/wormhole-mailbox:latest}
     restart: unless-stopped
     volumes: [mailbox-data:/data]
     # Plain port: use it on a LAN/VPN, or behind your own reverse proxy.
@@ -21,8 +23,7 @@ services:
     mem_limit: 128m
 
   relay:
-    build: {context: ., target: relay}
-    image: ${WORMHOLE_RELAY_IMAGE:-entangle/wormhole-relay:local}
+    image: ${WORMHOLE_RELAY_IMAGE:-docker.io/sctg/wormhole-relay:latest}
     restart: unless-stopped
     ports: ["${RELAY_BIND:-4001}:4001"]
     read_only: true
@@ -30,6 +31,25 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     mem_limit: 128m
+
+  # Browser client (send/receive without installing anything). Built from ../web.
+  # Same origin as the mailbox: Caddy routes /v1 to the mailbox, everything else here.
+  web:
+    profiles: [web]
+    build: {context: ../web, dockerfile: Containerfile}
+    image: ${WORMHOLE_WEB_IMAGE:-entangle/wormhole-web:local}
+    restart: unless-stopped
+    environment:
+      TRANSIT_RELAY: relay:4001
+      # Must match the entangle clients' AppID (default github.com/sctg-development/entangle
+      # since v0.8.1; older entangle used github.com/gowtham-sai-yadav/claude-teleport).
+      APP_ID: ${WORMHOLE_APP_ID:-github.com/sctg-development/entangle}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    depends_on: [relay]
 
   caddy:
     profiles: [tls]

@@ -30,16 +30,20 @@ import (
 )
 
 // AppID namespaces our transfers on the rendezvous server. Because two clients
-// can only meet if their AppID matches, using our own means a entangle
-// code only ever pairs with another entangle client, never a stranger on
-// the public wormhole network who happened to be handed the same words.
+// can only meet if their AppID matches, using our own means an entangle code
+// only ever pairs with another entangle client (or the entangle web page, which
+// uses the same default), never a stranger on the public wormhole network who
+// happened to be handed the same words.
 //
-// This string is wire compatibility, not a name. Two peers meet only if it
-// matches exactly and there is no way to negotiate it, so it must never change -
-// including when the product is renamed. It still reads "claude-teleport" because
-// that is what every copy already installed is using, and it has to keep matching
-// them. A test pins the literal value.
-const AppID = "github.com/gowtham-sai-yadav/claude-teleport"
+// This string is wire compatibility, not a name: two peers meet only if it
+// matches exactly and there is no way to negotiate it. Releases up to v0.8.0 used
+// LegacyAppID; from v0.8.1 the default is this one. To talk to an older entangle,
+// run the newer one with --app-id=<LegacyAppID> (or ENTANGLE_APP_ID).
+const AppID = "github.com/sctg-development/entangle"
+
+// LegacyAppID is the AppID of entangle v0.8.0 and earlier (and of claude-teleport).
+// Pass it with --app-id or ENTANGLE_APP_ID to meet those versions.
+const LegacyAppID = "github.com/gowtham-sai-yadav/claude-teleport"
 
 // The library's default mailbox speaks plain HTTP on port 4000 and its default
 // transit relay uses 4001. Conference, campus, and office networks routinely
@@ -77,6 +81,7 @@ var errHandshakeStalled = errors.New("the transfer server accepted the connectio
 type Config struct {
 	RendezvousURL string // mailbox server URL; "" = public default
 	TransitRelay  string // transit relay host:port; "" = public default
+	AppID         string // wormhole AppID; "" = the built-in AppID (see AppID above)
 	CodeWords     int    // words in the generated code (minimum 2)
 
 	// WordlistGenerator is an optional function to generate passphrase words.
@@ -107,6 +112,9 @@ type Config struct {
 
 func (c Config) client() *wormhole.Client {
 	cl := &wormhole.Client{AppID: AppID}
+	if c.AppID != "" {
+		cl.AppID = c.AppID
+	}
 	switch {
 	case c.RendezvousURL != "":
 		cl.RendezvousURL = c.RendezvousURL

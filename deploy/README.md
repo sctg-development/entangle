@@ -36,8 +36,12 @@ docker compose --profile tls up -d   # adds Caddy with automatic Let's Encrypt (
 ```
 
 With the `tls` profile, set `MAILBOX_BIND=127.0.0.1:4000` in `.env` so the plain
-port is not reachable from outside. Images are built from `deploy/docker/Dockerfile`;
-set `WORMHOLE_MAILBOX_IMAGE` / `WORMHOLE_RELAY_IMAGE` to use prebuilt ones.
+port is not reachable from outside. The public multi-arch (amd64 + arm64) images
+`docker.io/sctg/wormhole-mailbox` and `docker.io/sctg/wormhole-relay` are used by
+default, so nothing needs to be built. To build them yourself from
+`deploy/docker/Dockerfile`:
+`docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.
+The Helm chart and Argo CD application use the same public images.
 
 ## 2. Kubernetes (Helm)
 
@@ -79,6 +83,16 @@ Installs both servers from PyPI into virtualenvs under `/opt/wormhole`, runs
 them as hardened systemd services under a dedicated `wormhole` user (data in
 `/var/lib/wormhole`), and opens the ports in `ufw` if it is active. Re-run to
 upgrade; `sudo ./install.sh --uninstall` removes it.
+
+## Optional: browser page
+
+[`web/`](web/README.md) is a browser client for the same servers, so a teammate
+without entangle can receive a bundle or send a file from a web page, and gets a
+link to the latest entangle release. It is served on the same host as the
+mailbox (`/v1` to the mailbox, everything else to the page). Enable it with the
+`web` profile in Docker Compose, `page.enabled=true` in the Helm chart, or the
+`page:` block of the Argo CD application. The page shares entangle's default wormhole AppID (v0.8.1+); see
+[`web/README.md`](web/README.md#meeting-entangle-the-appid) for older entangle versions.
 
 ## Checking it works
 

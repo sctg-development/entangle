@@ -1,0 +1,41 @@
+{{- if .Values.page.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-page
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: {{ .Release.Name }}-page}
+  template:
+    metadata:
+      labels: {app: {{ .Release.Name }}-page}
+    spec:
+      containers:
+        - name: page
+          image: {{ .Values.page.image }}
+          ports:
+            - containerPort: 8080
+          env:
+            - {name: TRANSIT_RELAY, value: "{{ .Release.Name }}-relay:4001"}
+            - {name: APP_ID, value: {{ .Values.page.appId | quote }}}
+            - {name: ENTANGLE_URL, value: {{ .Values.page.entangleUrl | quote }}}
+          readinessProbe:
+            httpGet: {path: /health, port: 8080}
+          resources: {{- toYaml .Values.page.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-page
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+spec:
+  selector: {app: {{ .Release.Name }}-page}
+  ports:
+    - {name: http, port: 8080, targetPort: 8080}
+{{- end }}

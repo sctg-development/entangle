@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wormhole</title>
+<meta name="description" content="End-to-end encrypted file transfer in the browser. Drop a file, share the code, done.">
+<meta property="og:title" content="Wormhole">
+<meta property="og:description" content="End-to-end encrypted file transfer. No accounts, no tracking, no server access to your files.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Wormhole">
+<meta name="twitter:description" content="End-to-end encrypted file transfer. No accounts, no tracking.">
+<meta name="theme-color" content="#228be6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1b1e" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="modulepreload" href="/static/wasm/wormhole_wasm.js" integrity="WASM_JS_SRI_HASH" crossorigin="anonymous">
+<meta name="wasm-integrity" content="WASM_BG_SRI_HASH">
+</head>
+<body>
+<div class="container">
+  <h1>wormhole</h1>
+  <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" role="switch" aria-checked="false">
+    <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+  <button class="settings-toggle" id="settings-toggle" aria-label="Open settings" aria-haspopup="dialog" aria-controls="settings-modal">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="settings-dot hidden" id="settings-dot" aria-hidden="true"></span>
+  </button>
+  <p class="subtitle">Send files securely to anyone, anywhere</p>
+  <p class="entangle-hint"><a id="entangle-link" href="https://github.com/sctg-development/entangle/releases/latest" target="_blank" rel="noopener">Hand over a coding session? Get entangle</a></p>
+  <div class="features">
+    <span class="feature-badge">No account needed</span>
+    <span class="feature-badge">Files never stored on server</span>
+  </div>
+  <p id="encryption-status" class="warning">Your browser does not support WebAssembly. Use a modern browser or the wormhole CLI.</p>
+
+  <!-- Send / Receive tabs -->
+  <div class="main-tabs" role="tablist">
+    <button class="main-tab active" id="main-tab-send" role="tab" aria-selected="true" aria-controls="panel-send">Send</button>
+    <button class="main-tab" id="main-tab-receive" role="tab" aria-selected="false" aria-controls="panel-receive">Receive</button>
+  </div>
+
+  <!-- Send panel -->
+  <div id="panel-send" role="tabpanel" aria-labelledby="main-tab-send">
+    <!-- Send: initial state -->
+    <div id="send-initial">
+      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drop files here or click to browse">
+        Drop files here or click to browse
+        <div class="dropzone-hint">You can also drop folders</div>
+        <input type="file" id="file-input" multiple accept="*/*" aria-label="Select files to send">
+        <input type="file" id="folder-input" webkitdirectory aria-label="Select folder to send" style="display:none">
+      </div>
+      <button class="btn-folder" id="btn-folder" aria-label="Select a folder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        Send a folder
+      </button>
+      <button class="btn-folder" id="btn-text" aria-label="Send a text message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+        Send text
+      </button>
+      <div id="send-text-panel" class="hidden">
+        <textarea id="send-text-input" placeholder="Type or paste text to send&hellip;" aria-label="Text message to send" maxlength="262144" spellcheck="false"></textarea>
+        <div class="send-text-actions">
+          <button class="btn-action" id="send-text-cancel">Cancel</button>
+          <button class="btn" id="send-text-submit" disabled>Send text</button>
+        </div>
+        <p class="settings-error hidden" id="send-text-hint" role="alert"></p>
+      </div>
+    </div>
+
+    <!-- Send: status state -->
+    <div id="send-status" class="hidden">
+      <div class="send-status" aria-live="polite">
+        <div class="file-info">
+          <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div>
+            <div class="file-name" id="send-filename"></div>
+            <div class="file-size" id="send-filesize"></div>
+          </div>
+        </div>
+        <div id="send-code-section" class="hidden">
+          <div class="code-box" id="send-code"></div>
+          <div class="code-actions">
+            <button class="btn-action" id="btn-copy" title="Copy" aria-label="Copy code to clipboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              <span id="copy-label">Copy</span>
+            </button>
+            <button class="btn-action" id="btn-share" title="Share" aria-label="Share code" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              <span>Share</span>
+            </button>
+          </div>
+          <div class="mode-tabs" role="tablist">
+            <button class="mode-tab active" id="tab-web" role="tab" aria-selected="true">Web</button>
+            <button class="mode-tab" id="tab-wormhole" role="tab" aria-selected="false">Wormhole</button>
+          </div>
+          <div class="qr-container">
+            <div id="qr-display" role="img" aria-label="QR code for receive link"></div>
+          </div>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="send-progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>
+        <div class="status-text" id="send-status-text" aria-live="polite">allocating code...</div>
+        <div id="send-transfer-info" class="transfer-info hidden"></div>
+        <div id="send-keep-open" class="transfer-info">Keep this page open until the transfer is complete</div>
+        <button class="btn btn-cancel" id="send-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receive panel -->
+  <div id="panel-receive" class="hidden" role="tabpanel" aria-labelledby="main-tab-receive">
+    <!-- Receive: initial state -->
+    <div id="receive-initial">
+      <div class="receive-row">
+        <input type="text" id="receive-code" placeholder="Enter wormhole code" aria-label="Wormhole code">
+        <button class="btn" id="receive-btn">Receive</button>
+      </div>
+    </div>
+
+    <!-- Receive: status state -->
+    <div id="receive-status" class="hidden">
+      <div class="receive-status" aria-live="polite">
+        <div id="receive-file-info" class="file-info hidden">
+          <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div>
+            <div class="file-name" id="receive-filename"></div>
+            <div class="file-size" id="receive-filesize"></div>
+          </div>
+        </div>
+        <div id="receive-text-panel" class="hidden">
+          <pre id="receive-text-content" role="region" aria-label="Received text" tabindex="0"></pre>
+          <div class="code-actions">
+            <button class="btn-action" id="btn-copy-text" aria-label="Copy received text to clipboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              <span id="copy-text-label">Copy</span>
+            </button>
+            <button class="btn-action" id="btn-download-text" aria-label="Download received text as a file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Download</span>
+            </button>
+          </div>
+        </div>
+        <div id="receive-progress-section" class="hidden">
+          <div class="progress-track"><div class="progress-bar" id="receive-progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div></div>
+        </div>
+        <div id="receive-spinner" class=""><span class="spinner"></span></div>
+        <span id="receive-status-text" aria-live="polite">starting download...</span>
+        <div id="receive-transfer-info" class="transfer-info hidden"></div>
+        <button class="btn btn-cancel" id="receive-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- About section -->
+  <details class="cli-section">
+    <summary>How it works</summary>
+    <div class="cli-content">
+      <div class="cli-group">
+        <p style="font-size:13px;color:var(--text-primary);line-height:1.5;margin:0 0 12px">
+          <strong>This page</strong> is a <a href="https://magic-wormhole.readthedocs.io/" target="_blank">Magic Wormhole</a> client
+          that runs entirely in your browser via WebAssembly. Encryption keys are
+          negotiated client-side using SPAKE2 and all data is encrypted with NaCl
+          SecretBox. The server never sees your files.
+        </p>
+        <p style="font-size:13px;color:var(--text-primary);line-height:1.5;margin:0 0 12px">
+          Fully interoperable with all Magic Wormhole clients &mdash; send from your
+          browser, receive on the command line, or vice versa.
+        </p>
+      </div>
+      <div class="cli-group">
+        <h3>Compatible apps</h3>
+        <div class="cli-links">
+          <a href="https://github.com/magic-wormhole/magic-wormhole.rs" target="_blank">wormhole-rs</a> (Rust CLI)
+          <a href="https://magic-wormhole.readthedocs.io/" target="_blank">magic-wormhole</a> (Python CLI)
+          <a href="https://github.com/psanford/wormhole-william" target="_blank">wormhole-william</a> (Go CLI)
+          <a href="https://apps.apple.com/app/wormhole-file-transfer/id6753897991" target="_blank">Wormhole File Transfer</a> (iOS)
+          <a href="https://play.google.com/store/apps/details?id=io.sanford.wormhole_william" target="_blank">Wormhole William</a> (Android)
+          <a href="https://github.com/iyox-studios/iyox-Wormhole" target="_blank">iyox Wormhole</a> (Android)
+        </div>
+      </div>
+      <div class="cli-group" style="text-align:center;margin-top:8px">
+        <a href="https://github.com/sctg-development/entangle/tree/main/deploy/web" target="_blank" rel="noopener" style="font-size:12px;color:var(--text-secondary)">Source code</a>
+        <span style="font-size:12px;color:var(--text-secondary)"> &middot; based on <a href="https://github.com/lucamartinetti/wormhole-page" target="_blank" rel="noopener">wormhole-page</a> by Luca Martinetti (MIT) &middot; &copy; 2026 SCTG Development &ndash; Ronan Le Meillat</span>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- Settings modal -->
+<div class="settings-overlay hidden" id="settings-overlay">
+  <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="settings-header">
+      <h2 id="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close" aria-label="Close settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="settings-desc">Point this browser at different Magic Wormhole relays. Saved in this browser only &mdash; nothing is stored on the server.</p>
+    <div class="settings-field">
+      <label for="settings-mailbox-url">Mailbox (rendezvous) server</label>
+      <input type="url" id="settings-mailbox-url" autocomplete="off" spellcheck="false" placeholder="same host: wss://&lt;host&gt;/v1" aria-describedby="settings-error">
+    </div>
+    <div class="settings-field">
+      <label for="settings-transit-url">Transit relay (WebSocket)</label>
+      <input type="url" id="settings-transit-url" autocomplete="off" spellcheck="false" placeholder="wss://&lt;host&gt;/transit" aria-describedby="settings-error">
+    </div>
+    <p class="settings-error hidden" id="settings-error" role="alert"></p>
+    <p class="settings-hint">Leave a field empty to use the default server. ws:// and wss:// URLs only. Values apply to the next transfer.</p>
+    <div class="settings-actions">
+      <button class="btn-action" id="settings-reset">Reset to defaults</button>
+      <div class="settings-actions-right">
+        <button class="btn-action" id="settings-cancel">Cancel</button>
+        <button class="btn" id="settings-save">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/qr.js"></script>
+<script src="/static/wasm-client.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

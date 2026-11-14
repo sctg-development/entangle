@@ -9,21 +9,20 @@ import (
 	"testing"
 )
 
-// TestAppIDIsWireCompatibility pins the literal AppID. Two peers meet only if it
-// matches exactly and there is no negotiation, so changing this value silently
-// breaks send/receive against every released version. The sibling test in
-// config_test.go compares the client field to the constant, which cannot catch a
-// change to the constant itself.
+// TestAppIDIsWireCompatibility pins the literal AppIDs. Two peers meet only if
+// the value matches exactly and there is no negotiation, so changing the default
+// silently breaks send/receive against released versions that use the other one.
+// v0.8.1 switched the default from LegacyAppID to the entangle one, matching the
+// web page (deploy/web); this test makes any further change a deliberate act.
 func TestAppIDIsWireCompatibility(t *testing.T) {
-	// Deliberately the pre-rename string. This is a wire value, not a name: two
-	// peers only meet if it matches byte for byte, there is no way to negotiate it,
-	// and every copy already installed uses this one. It has to survive the rename
-	// to entangle, and every rename after it.
-	const want = "github.com/gowtham-sai-yadav/claude-teleport"
+	const want = "github.com/sctg-development/entangle"
 	if AppID != want {
-		t.Fatalf("AppID = %q, want %q.\n"+
-			"This is a wire-compatibility constant: changing it breaks transfers against every "+
-			"installed version, including after a product rename.", AppID, want)
+		t.Fatalf("AppID = %q, want %q.\nThis is a wire-compatibility constant shared with the web page; "+
+			"changing it breaks transfers against released versions (they must pass --app-id).", AppID, want)
+	}
+	const legacy = "github.com/gowtham-sai-yadav/claude-teleport"
+	if LegacyAppID != legacy {
+		t.Fatalf("LegacyAppID = %q, want %q: it must keep matching v0.8.0 and earlier.", LegacyAppID, legacy)
 	}
 }
 

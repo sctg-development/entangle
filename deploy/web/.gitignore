@@ -1,0 +1,8 @@
+/target/
+crates/*/target/
+crates/wormhole-wasm/pkg/
+# built by `make wasm` / the Containerfile
+static/wasm/
+node_modules/
+test-results/
+playwright-report/

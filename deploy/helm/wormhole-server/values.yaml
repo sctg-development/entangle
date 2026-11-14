@@ -20,6 +20,18 @@ relay:
     nodePort: null         # set when type=NodePort
     annotations: {}
 
+# Optional browser page (send/receive in the browser, link to entangle).
+# Build the image from deploy/web (Containerfile) and push it to your registry first.
+page:
+  enabled: false
+  image: docker.io/sctg/wormhole-page:latest
+  # Wormhole AppID; must match the entangle clients' --app-id.
+  appId: github.com/sctg-development/entangle
+  entangleUrl: https://github.com/sctg-development/entangle/releases/latest
+  resources:
+    requests: {cpu: 10m, memory: 16Mi}
+    limits: {memory: 128Mi}
+
 # WebSocket endpoint (wss://<host>/v1) for the mailbox.
 ingress:
   enabled: false

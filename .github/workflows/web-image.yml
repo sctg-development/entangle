@@ -1,0 +1,25 @@
+name: Web page image
+
+# Builds and pushes the multi-arch (amd64 + arm64) Docker image of the browser
+# page in deploy/web to Docker Hub as sctg/wormhole-page. Runs on every release
+# tag, and on demand.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: sctg-development/build-multi-arch-docker-action/.github/workflows/build.yml@v2
+    with:
+      dockerfile: deploy/web/Containerfile
+      context: deploy/web
+      image: sctg/wormhole-page
+      artifact-prefix: wormhole-page-${{ github.run_id }}
+      tags: |
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=raw,value=latest
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

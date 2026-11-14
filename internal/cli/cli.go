@@ -839,6 +839,7 @@ func runSend(args []string) error {
 	withContext := fs.Bool("with-context", false, "also include the project's memory/context files")
 	noRedact := fs.Bool("no-redact", false, "do NOT scrub secrets before sending (not recommended)")
 	yes := fs.Bool("yes", false, "skip the confirmation prompt")
+	appID := fs.String("app-id", envOr("ENTANGLE_APP_ID", ""), "wormhole AppID (default github.com/sctg-development/entangle; v0.8.0 and earlier used github.com/gowtham-sai-yadav/claude-teleport)")
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	words := fs.Int("code-words", 2, "number of words in the transfer code")
@@ -914,7 +915,7 @@ func runSend(args []string) error {
 
 	wlGen := getWordlistGenerator(*wordlistFlag)
 
-	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words, WordlistGenerator: wlGen}
+	tcfg := transfer.Config{AppID: *appID, RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words, WordlistGenerator: wlGen}
 	fmt.Println("Preparing a secure transfer...")
 	err = transfer.Send(ctx, tcfg, sendName, buf.Bytes(),
 		printSendCode,
@@ -953,6 +954,7 @@ func runReceive(args []string) error {
 	yes := fs.Bool("yes", false, "skip the import confirmation prompt")
 	home := fs.String("target-home", "", "override the target home directory")
 	tos := fs.String("target-os", "", "render paths for this OS: linux|darwin|windows")
+	appID := fs.String("app-id", envOr("ENTANGLE_APP_ID", ""), "wormhole AppID (default github.com/sctg-development/entangle; v0.8.0 and earlier used github.com/gowtham-sai-yadav/claude-teleport)")
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the transfer does not start within this time")
@@ -976,7 +978,7 @@ func runReceive(args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, *timeout)
 	defer cancel()
 
-	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay}
+	tcfg := transfer.Config{AppID: *appID, RendezvousURL: *rendezvous, TransitRelay: *relay}
 	fmt.Println("Connecting...")
 	in, err := transfer.Receive(ctx, tcfg, code)
 	if err != nil {
@@ -1217,13 +1219,14 @@ func runGUI(args []string) error {
 func runTUI(args []string) error {
 	fs := flag.NewFlagSet("tui", flag.ContinueOnError)
 	cfg := fs.String("config-dir", "", "override the Claude config dir")
+	appID := fs.String("app-id", envOr("ENTANGLE_APP_ID", ""), "wormhole AppID (default github.com/sctg-development/entangle; v0.8.0 and earlier used github.com/gowtham-sai-yadav/claude-teleport)")
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	words := fs.Int("code-words", 2, "number of words in a generated transfer code")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words}
+	tcfg := transfer.Config{AppID: *appID, RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words}
 	// The cockpit takes over the screen, so it is handed the update note to show
 	// in its own header rather than having it printed underneath the alt-screen.
 	return tui.Run(*cfg, tcfg, Version(), updater.AvailableUpdate(Version()))
@@ -1318,6 +1321,7 @@ const fileTooLargeThreshold = 100 << 20 // 100 MiB
 func runSendFile(args []string) error {
 	fs := flag.NewFlagSet("send-file", flag.ContinueOnError)
 	output := fs.String("output", "", "name to offer the file as (default: source filename)")
+	appID := fs.String("app-id", envOr("ENTANGLE_APP_ID", ""), "wormhole AppID (default github.com/sctg-development/entangle; v0.8.0 and earlier used github.com/gowtham-sai-yadav/claude-teleport)")
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	words := fs.Int("code-words", 2, "number of words in the transfer code")
@@ -1363,7 +1367,7 @@ func runSendFile(args []string) error {
 
 	wlGen := getWordlistGenerator(*wordlistFlag)
 
-	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words, WordlistGenerator: wlGen}
+	tcfg := transfer.Config{AppID: *appID, RendezvousURL: *rendezvous, TransitRelay: *relay, CodeWords: *words, WordlistGenerator: wlGen}
 	fmt.Println("Preparing a secure transfer...")
 	err = transfer.Send(ctx, tcfg, sendName, data,
 		printFileSendCode(sendName),
@@ -1409,6 +1413,7 @@ func runReceiveFile(args []string) error {
 	fs := flag.NewFlagSet("receive-file", flag.ContinueOnError)
 	output := fs.String("output", "", "output filename (default: the name offered by the sender)")
 	yes := fs.Bool("yes", false, "overwrite the destination without asking")
+	appID := fs.String("app-id", envOr("ENTANGLE_APP_ID", ""), "wormhole AppID (default github.com/sctg-development/entangle; v0.8.0 and earlier used github.com/gowtham-sai-yadav/claude-teleport)")
 	rendezvous := fs.String("rendezvous", envOr("ENTANGLE_RENDEZVOUS", ""), "rendezvous server URL (default: public magic-wormhole)")
 	relay := fs.String("relay", envOr("ENTANGLE_RELAY", ""), "transit relay host:port (default: public magic-wormhole)")
 	timeout := fs.Duration("timeout", 15*time.Minute, "give up if the transfer does not start within this time")
@@ -1426,7 +1431,7 @@ func runReceiveFile(args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, *timeout)
 	defer cancel()
 
-	tcfg := transfer.Config{RendezvousURL: *rendezvous, TransitRelay: *relay}
+	tcfg := transfer.Config{AppID: *appID, RendezvousURL: *rendezvous, TransitRelay: *relay}
 	fmt.Println("Connecting...")
 	in, err := transfer.Receive(ctx, tcfg, code)
 	if err != nil {

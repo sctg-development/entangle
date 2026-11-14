@@ -1,0 +1,32 @@
+[package]
+name = "wormhole-wasm"
+license = "MIT"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+magic-wormhole = { git = "https://github.com/lucamartinetti/magic-wormhole.rs", rev = "b695a1d79138d802391125f4ebbc463b80737974", default-features = false, features = ["transit", "transfer"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["console"] }
+serde = { version = "1", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+console_error_panic_hook = "0.1"
+futures = "0.3"
+
+# Force time crate to use js_sys::Date on WASM instead of std::time::SystemTime
+time = { version = "0.3", features = ["wasm-bindgen"] }
+# Provide Instant::now() on WASM via performance.now()
+web-time = "1"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true

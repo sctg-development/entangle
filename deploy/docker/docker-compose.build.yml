@@ -1,0 +1,9 @@
+# Override: build the images locally instead of pulling docker.io/sctg/*.
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  mailbox:
+    build: {context: ., target: mailbox}
+    image: entangle/wormhole-mailbox:local
+  relay:
+    build: {context: ., target: relay}
+    image: entangle/wormhole-relay:local

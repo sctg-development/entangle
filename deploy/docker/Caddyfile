@@ -1,5 +1,11 @@
-# WebSocket (wss) in front of the mailbox. Caddy handles Let's Encrypt and
-# proxies WebSocket upgrades with no extra configuration.
+# TLS front end. WebSocket upgrades need no extra configuration.
+#   /v1  -> mailbox (rendezvous WebSocket)
+#   else -> browser page, when the "web" profile is enabled (502 otherwise)
 {$WORMHOLE_DOMAIN} {
-	reverse_proxy mailbox:4000
+	handle /v1* {
+		reverse_proxy mailbox:4000
+	}
+	handle {
+		reverse_proxy web:8080
+	}
 }

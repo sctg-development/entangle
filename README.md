@@ -191,7 +191,7 @@ Either way, likely secrets (keys, tokens, passwords) are scrubbed before anythin
 
 ## Run your own relay
 
-By default `send`/`receive` use the public magic-wormhole servers. Your data stays end-to-end encrypted, but those servers see connection metadata (IP addresses, timing, volume). To keep that on your own infrastructure, self-host the mailbox and transit relay: [Docker Compose, Helm, Argo CD or a plain Ubuntu server](deploy/README.md). Then point entangle at them:
+By default `send`/`receive` use the public magic-wormhole servers. Your data stays end-to-end encrypted, but those servers see connection metadata (IP addresses, timing, volume). To keep that on your own infrastructure, self-host the mailbox and transit relay: [Docker Compose, Helm, Argo CD or a plain Ubuntu server](deploy/README.md). Then point entangle at them (a browser page for people without entangle is optional, see `deploy/web`):
 
 ```bash
 export ENTANGLE_RENDEZVOUS=wss://wormhole.example.org/v1
@@ -360,7 +360,7 @@ entangle gui      [bundle] [--port N]
 
 `--tool` takes `claude-code`, `codex`, `opencode`, `kilo`, `cline`, or `all`. It defaults to `all`, so you rarely need it: `sessions` shows every agent on the machine, and `share`/`send` work out which one an id belongs to. Pass it when you want a listing narrowed to a single tool.
 
-`inspect` shows what is inside a bundle. `verify` checks the sessions already on this machine are resume-ready (Claude Code only, like `export`). `send`/`receive` use the public magic-wormhole servers by default; point them at your own with `--rendezvous`/`--relay` or the `ENTANGLE_RENDEZVOUS`/`ENTANGLE_RELAY` environment variables. `ENTANGLE_WORDLIST` sets the default wordlist for `send` and `send-file` (e.g., `en`, `fr`, `de`, `es`, `it`, `pt`, or a path). `ENTANGLE_NO_UPDATE_CHECK=1` silences the [release check](#updating).
+`inspect` shows what is inside a bundle. `verify` checks the sessions already on this machine are resume-ready (Claude Code only, like `export`). `send`/`receive` use the public magic-wormhole servers by default; point them at your own with `--rendezvous`/`--relay` or the `ENTANGLE_RENDEZVOUS`/`ENTANGLE_RELAY` environment variables. `ENTANGLE_WORDLIST` sets the default wordlist for `send` and `send-file` (e.g., `en`, `fr`, `de`, `es`, `it`, `pt`, or a path). `ENTANGLE_APP_ID` (or `--app-id`) overrides the wormhole AppID (default `github.com/sctg-development/entangle`, shared with the browser page in `deploy/web`; v0.8.0 and earlier used `github.com/gowtham-sai-yadav/claude-teleport`, see [Compatibility](#compatibility-with-older-versions)). `ENTANGLE_NO_UPDATE_CHECK=1` silences the [release check](#updating).
 
 </details>
 
@@ -396,6 +396,17 @@ The receiving side needs no flag either: which tool a session came from travels 
 ## Why "entangle"?
 
 Quantum teleportation needs two things that are useless apart: a link between two places, and a few words sent the ordinary way. Same here.
+
+## Compatibility with older versions
+
+Since v0.8.1 the default wormhole AppID is `github.com/sctg-development/entangle`. Two peers only meet when their AppID is identical, so a v0.8.1+ entangle cannot exchange with v0.8.0 or earlier by default. To talk to an older version, either update both sides, or run the newer one with the old AppID:
+
+```bash
+entangle send <id> --app-id github.com/gowtham-sai-yadav/claude-teleport
+entangle receive <code> --app-id github.com/gowtham-sai-yadav/claude-teleport
+# or once, in your shell config:
+export ENTANGLE_APP_ID=github.com/gowtham-sai-yadav/claude-teleport
+```
 
 ## Contributing
 

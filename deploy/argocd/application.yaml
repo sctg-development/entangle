@@ -24,6 +24,10 @@ spec:
         relay:
           service:
             type: LoadBalancer
+        # Optional browser page (build/push the image from deploy/web first):
+        # page:
+        #   enabled: true
+        #   image: registry.example.org/wormhole-page:latest
   destination:
     server: https://kubernetes.default.svc
     namespace: wormhole

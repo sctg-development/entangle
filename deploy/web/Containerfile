@@ -1,0 +1,44 @@
+# --- Build stage: Rust server + WASM ---
+FROM rust:1.94-slim AS builder
+
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN cargo install wasm-pack
+
+WORKDIR /build
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ crates/
+
+# Build server
+RUN cargo build --release -p wormhole-page-server
+
+# Build WASM
+RUN cd crates/wormhole-wasm && wasm-pack build --target web --release
+
+# --- Runtime stage ---
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/target/release/wormhole-page-server /usr/local/bin/
+COPY static/ /app/static/
+COPY --from=builder /build/crates/wormhole-wasm/pkg/wormhole_wasm_bg.wasm /app/static/wasm/
+COPY --from=builder /build/crates/wormhole-wasm/pkg/wormhole_wasm.js /app/static/wasm/
+
+# Generate SRI hashes and inject integrity attributes
+RUN WASM_JS_HASH=$(openssl dgst -sha384 -binary /app/static/wasm/wormhole_wasm.js | openssl base64 -A) && \
+    WASM_BG_HASH=$(openssl dgst -sha384 -binary /app/static/wasm/wormhole_wasm_bg.wasm | openssl base64 -A) && \
+    QR_JS_HASH=$(openssl dgst -sha384 -binary /app/static/qr.js | openssl base64 -A) && \
+    WASM_CLIENT_JS_HASH=$(openssl dgst -sha384 -binary /app/static/wasm-client.js | openssl base64 -A) && \
+    APP_JS_HASH=$(openssl dgst -sha384 -binary /app/static/app.js | openssl base64 -A) && \
+    sed -i "s|WASM_JS_SRI_HASH|sha384-${WASM_JS_HASH}|g" /app/static/index.html && \
+    sed -i "s|WASM_BG_SRI_HASH|sha384-${WASM_BG_HASH}|g" /app/static/index.html && \
+    sed -i 's|src="/static/qr.js"|src="/static/qr.js" integrity="sha384-'"${QR_JS_HASH}"'" crossorigin="anonymous"|' /app/static/index.html && \
+    sed -i 's|src="/static/wasm-client.js"|src="/static/wasm-client.js" integrity="sha384-'"${WASM_CLIENT_JS_HASH}"'" crossorigin="anonymous"|' /app/static/index.html && \
+    sed -i 's|src="/static/app.js"|src="/static/app.js" integrity="sha384-'"${APP_JS_HASH}"'" crossorigin="anonymous"|' /app/static/index.html && \
+    BUILD_HASH=$(cat /app/static/wasm/wormhole_wasm_bg.wasm /app/static/wasm/wormhole_wasm.js /app/static/app.js /app/static/style.css | openssl dgst -sha256 -binary | openssl base64 -A | head -c 8) && \
+    sed -i "s|BUILD_HASH|${BUILD_HASH}|g" /app/static/sw.js
+
+EXPOSE 8080
+
+ENTRYPOINT ["wormhole-page-server"]
+CMD ["--port", "8080", "--static-dir", "/app/static"]
