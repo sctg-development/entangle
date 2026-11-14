@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-relay
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.relay.replicas }}
+  selector:
+    matchLabels: {app: {{ .Release.Name }}-relay}
+  template:
+    metadata:
+      labels: {app: {{ .Release.Name }}-relay}
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app: {{ .Release.Name }}-relay}
+      containers:
+        - name: relay
+          image: {{ .Values.relay.image }}
+          ports:
+            - containerPort: 4001
+          readinessProbe:
+            tcpSocket: {port: 4001}
+          resources: {{- toYaml .Values.relay.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-relay
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  {{- with .Values.relay.service.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.relay.service.type }}
+  selector: {app: {{ .Release.Name }}-relay}
+  ports:
+    - name: transit
+      port: 4001
+      targetPort: 4001
+      {{- if and (eq .Values.relay.service.type "NodePort") .Values.relay.service.nodePort }}
+      nodePort: {{ .Values.relay.service.nodePort }}
+      {{- end }}

@@ -1,0 +1,7 @@
+Point entangle at your servers:
+
+  export ENTANGLE_RENDEZVOUS=wss://{{ .Values.ingress.host }}/v1
+  export ENTANGLE_RELAY=<public host or IP of the relay>:4001   # service: {{ .Release.Name }}-relay ({{ .Values.relay.service.type }})
+
+The relay speaks raw TCP: expose port 4001 with a LoadBalancer, a NodePort, or
+your ingress controller's TCP support.

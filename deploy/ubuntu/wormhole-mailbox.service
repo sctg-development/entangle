@@ -1,0 +1,23 @@
+[Unit]
+Description=magic-wormhole mailbox (rendezvous) server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=wormhole
+Group=wormhole
+WorkingDirectory=/var/lib/wormhole
+ExecStart=/opt/wormhole/mailbox/bin/twist wormhole-mailbox --port=tcp:4000 --channel-db=/var/lib/wormhole/channel.sqlite --usage-db=/var/lib/wormhole/usage.sqlite
+Restart=on-failure
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/lib/wormhole
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

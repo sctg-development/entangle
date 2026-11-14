@@ -1,0 +1,22 @@
+[Unit]
+Description=magic-wormhole transit relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=wormhole
+Group=wormhole
+WorkingDirectory=/var/lib/wormhole
+ExecStart=/opt/wormhole/relay/bin/twist transitrelay --port=tcp:4001
+Restart=on-failure
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

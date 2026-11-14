@@ -189,6 +189,15 @@ They import it later with `entangle import <file>`.
 
 Either way, likely secrets (keys, tokens, passwords) are scrubbed before anything leaves your machine, and your login is never included. `--last` picks your most recent session, and `--with-context` also includes the project's memory files.
 
+## Run your own relay
+
+By default `send`/`receive` use the public magic-wormhole servers. Your data stays end-to-end encrypted, but those servers see connection metadata (IP addresses, timing, volume). To keep that on your own infrastructure, self-host the mailbox and transit relay: [Docker Compose, Helm, Argo CD or a plain Ubuntu server](deploy/README.md). Then point entangle at them:
+
+```bash
+export ENTANGLE_RENDEZVOUS=wss://wormhole.example.org/v1
+export ENTANGLE_RELAY=wormhole.example.org:4001
+```
+
 ## Move to a new machine
 
 Moving all of your work to a new computer is two commands, one on each.
@@ -294,6 +303,8 @@ locale) and falls back to English. Sources and licenses: `internal/wordlist/NOTI
 entangle send <id> --wordlist=de                  # force German
 entangle send <id> --wordlist=/path/to/list.txt   # custom file (tab-separated: number\tword)
 ```
+
+**Run your own servers.** To keep the connection metadata off the public magic-wormhole servers, self-host the mailbox and transit relay with Docker Compose, Helm, Argo CD or a plain Ubuntu server: see [`deploy/`](deploy/README.md).
 
 The receiver does not need `--wordlist`; the sender generates the code. Set `ENTANGLE_WORDLIST` (e.g. `fr`) in your shell config to override the automatic choice.
 

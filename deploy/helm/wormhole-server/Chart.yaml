@@ -1,0 +1,6 @@
+apiVersion: v2
+name: wormhole-server
+description: Self-hosted magic-wormhole mailbox (rendezvous) and transit relay, for entangle
+type: application
+version: 0.1.0
+appVersion: "latest"

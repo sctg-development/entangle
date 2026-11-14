@@ -1,0 +1,5 @@
+# WebSocket (wss) in front of the mailbox. Caddy handles Let's Encrypt and
+# proxies WebSocket upgrades with no extra configuration.
+{$WORMHOLE_DOMAIN} {
+	reverse_proxy mailbox:4000
+}

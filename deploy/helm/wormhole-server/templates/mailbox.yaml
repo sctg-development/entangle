@@ -1,0 +1,92 @@
+{{- if .Values.mailbox.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-mailbox-data
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.mailbox.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mailbox.persistence.size }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mailbox
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # SQLite on a ReadWriteOnce volume
+  selector:
+    matchLabels: {app: {{ .Release.Name }}-mailbox}
+  template:
+    metadata:
+      labels: {app: {{ .Release.Name }}-mailbox}
+    spec:
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mailbox
+          image: {{ .Values.mailbox.image }}
+          ports:
+            - containerPort: 4000
+          volumeMounts:
+            - {name: data, mountPath: /data}
+          readinessProbe:
+            tcpSocket: {port: 4000}
+          resources: {{- toYaml .Values.mailbox.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: data
+          {{- if .Values.mailbox.persistence.enabled }}
+          persistentVolumeClaim: {claimName: {{ .Release.Name }}-mailbox-data}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-mailbox
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+spec:
+  selector: {app: {{ .Release.Name }}-mailbox}
+  ports:
+    - {name: ws, port: 4000, targetPort: 4000}
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-mailbox
+  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.ingress.host }}]
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-mailbox
+                port: {number: 4000}
+{{- end }}

@@ -1,0 +1,37 @@
+mailbox:
+  image: docker.io/sctg/wormhole-mailbox:latest
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClassName: ""   # "" = cluster default
+  resources:
+    requests: {cpu: 10m, memory: 48Mi}
+    limits: {memory: 128Mi}
+
+relay:
+  image: docker.io/sctg/wormhole-relay:latest
+  replicas: 2
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 128Mi}
+  # The transit relay is raw TCP on 4001. How you expose it depends on your cluster.
+  service:
+    type: ClusterIP        # ClusterIP | NodePort | LoadBalancer
+    nodePort: null         # set when type=NodePort
+    annotations: {}
+
+# WebSocket endpoint (wss://<host>/v1) for the mailbox.
+ingress:
+  enabled: false
+  className: ""
+  host: wormhole.example.org
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    # haproxy.org/timeout-tunnel: "1h"
+  tls:
+    enabled: true
+    secretName: wormhole-tls
+
+podSecurityContext:
+  fsGroup: 10001

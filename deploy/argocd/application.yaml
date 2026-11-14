@@ -1,0 +1,32 @@
+# Argo CD Application deploying the Helm chart from this repository.
+# Edit repoURL/targetRevision and the values below, then: kubectl apply -f application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: wormhole
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sctg-development/entangle.git
+    targetRevision: main
+    path: deploy/helm/wormhole-server
+    helm:
+      releaseName: wormhole
+      valuesObject:
+        ingress:
+          enabled: true
+          className: nginx
+          host: wormhole.example.org
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt
+            nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+        relay:
+          service:
+            type: LoadBalancer
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: wormhole
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]
