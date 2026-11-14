@@ -54,7 +54,9 @@ relay:
     tag: latest
     digest: ""
     pullPolicy: ""
-  replicas: 2
+  # Keep 1: a transit relay pairs the two peers in memory, so with several replicas behind one
+  # Service the sender and the receiver land on different pods and never meet.
+  replicas: 1
   resources:
     requests: {cpu: 10m, memory: 32Mi}
     limits: {memory: 128Mi}
