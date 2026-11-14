@@ -33,3 +33,6 @@ The WebAssembly client links the magic-wormhole Rust library
 crates/wormhole-wasm/Cargo.toml), which is licensed EUPL-1.2, not MIT. The EUPL
 text and source are available in that repository; anyone distributing the built
 WebAssembly module must comply with the EUPL for that part.
+
+The SCTG logo (public/logo-sctg.svg) is not covered by the MIT licence. The Neutraface
+Text font files (public/fonts) are commercial and not covered either: see NOTICE.md.

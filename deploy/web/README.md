@@ -13,7 +13,13 @@ files, a `/config.json`, and a WebSocket-to-TCP bridge (`/transit`) to the
 transit relay.
 
 Detached copy of [wormhole-page](https://github.com/lucamartinetti/wormhole-page)
-by Luca Martinetti (MIT), with changes by SCTG Development, see [LICENSE](LICENSE):
+by Luca Martinetti (MIT), with changes by SCTG Development, see [LICENSE](LICENSE)
+and [NOTICE.md](NOTICE.md) (third-party components, the Neutraface Text font):
+
+- React 19 + [HeroUI v3](https://www.heroui.com/) + Tailwind CSS v4 interface (it was static HTML/JS),
+  with the KiiK visual identity: Neutraface Text, blue/grey palette, dotted frames, light and dark themes
+- five languages: en-US, fr-FR, es-ES, pt-PT, it-IT (browser language, switchable, remembered)
+- the SCTG logo
 
 - no analytics (the Umami proxy and its hard-coded site id are gone)
 - runtime configuration (`/config.json`): one WASM build serves any deployment
@@ -73,11 +79,30 @@ Behind an ingress, give WebSockets (`/transit`) a long idle timeout.
 
 ## Development
 
+Layout: `src/` React app (components, `i18n/locales/*.json`), `public/` copied as-is
+(`wasm-client.js` transfer engine, `sw.js`, fonts, logo, `wasm/` generated), `scripts/postbuild.mjs`
+(SRI hashes, WASM hashes, service worker precache), `crates/` Rust server and WASM client.
+
 ```bash
-make build          # server + WASM (needs rustup target wasm32-unknown-unknown and wasm-pack)
-make run
-npx playwright test # e2e suite; expects a server on :8080 with a reachable mailbox
+rustup target add wasm32-unknown-unknown   # and: cargo install wasm-pack
+make wasm            # builds the WebAssembly client into public/wasm
+npm ci
+npm run dev          # Vite on :5173, proxying /config.json, /transit and /v1 to a server on :8080
+npm run build        # tsc + vite build + postbuild -> dist/
+make run             # server on :8080 serving dist/
 ```
 
-Notes: `static/wasm/` is generated, never committed. The magic-wormhole library
-is pinned by commit in `crates/wormhole-wasm/Cargo.toml` and is EUPL-1.2 licensed.
+Tests (Playwright, against the built app; the transfer tests also need a mailbox and
+relay, e.g. `docker compose up -d` in `deploy/docker`, and skip otherwise):
+
+```bash
+npm run build && npx playwright test
+```
+
+Adding a language: copy `src/i18n/locales/en-US.json`, translate it, and register it in
+`src/i18n/index.ts` (`LANGUAGES` and `resources`). Status lines coming from the transfer
+engine are mapped through the `status.*` keys; error messages from the engine stay in English.
+
+`public/wasm/`, `dist/` and `node_modules/` are generated and never committed. The
+magic-wormhole library is pinned by commit in `crates/wormhole-wasm/Cargo.toml` and is
+EUPL-1.2 licensed.

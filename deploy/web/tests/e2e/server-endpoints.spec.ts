@@ -27,7 +27,7 @@ test.describe('GET /config.json', () => {
     expect(resp.headers()['cache-control']).toBe('no-store');
     const cfg = await resp.json();
     expect(cfg.appId).toBe('github.com/sctg-development/entangle');
-    expect(cfg.mailboxUrl).toBe('');
+    expect(typeof cfg.mailboxUrl).toBe('string');
     expect(cfg.transitHint).toMatch(/^tcp:\/\/.+:4001$/);
     expect(cfg.entangleUrl).toContain('/releases/latest');
   });

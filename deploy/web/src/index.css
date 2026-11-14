@@ -1,0 +1,145 @@
+/*
+ * Copyright (c) 2026 SCTG Development - Ronan Le Meillat (MIT License)
+ * See the LICENSE file in the project root.
+ *
+ * Visual language shared with the KiiK shortener: Neutraface Text, the amb* blue/grey/red
+ * palette, dotted borders and offset coloured frames. Neutraface Text is a commercial
+ * typeface (House Industries), see ../NOTICE.md.
+ */
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@font-face {
+  font-family: 'Neutraface Text';
+  src: url('/static/fonts/NeutrafaceText-Book.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Neutraface Text';
+  src: url('/static/fonts/NeutrafaceText-BookItalic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Neutraface Text';
+  src: url('/static/fonts/NeutrafaceText-Demi.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Neutraface Text';
+  src: url('/static/fonts/NeutrafaceText-DemiItalic.woff2') format('woff2');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Neutraface Text';
+  src: url('/static/fonts/NeutrafaceText-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Neutraface Text SC';
+  src: url('/static/fonts/NeutrafaceText-BookSC.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Neutraface Text Plain';
+  src: url('/static/fonts/NeutrafaceText-BookNoAmbiguity.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-ambblue-50: #0a94e6;
+  --color-ambblue-100: #008adc;
+  --color-ambblue-200: #097bcd;
+  --color-ambblue-500: #1a4ea0;
+  --color-ambblue-800: #1e3280;
+  --color-ambblue-900: #141a66;
+  --color-ambred-500: #d90012;
+  --color-ambyel-500: #ffed00;
+  --color-ambgrey-100: #949ea7;
+  --color-ambgrey-200: #8a949d;
+  --color-ambgrey-700: #58626b;
+  --color-ambgrey-900: #000000;
+  --color-gdt-500: #32323e;
+  --color-gdt-700: #1e1e2a;
+  --color-gdt-800: #141420;
+  --color-gdt-900: #0a0a16;
+  --color-sctgviolet: #54256b;
+  --color-sctgorange: #d54a15;
+  --color-sctgrose: #c61261;
+  --color-sctggreen: #2a8440;
+
+  --font-neutra: 'Neutraface Text', 'Avenir Next', 'Century Gothic', 'Segoe UI', system-ui, sans-serif;
+  --font-neutra-sc: 'Neutraface Text SC', 'Neutraface Text', system-ui, sans-serif;
+  --font-neutra-plain: 'Neutraface Text Plain', 'Neutraface Text', system-ui, sans-serif;
+  --text-xxs: 0.5rem;
+  --border-width-6: 6px;
+}
+
+/* HeroUI tokens mapped on the palette. Light = white page, ambblue accents. */
+:root, [data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #101426;
+  --surface: #ffffff;
+  --surface-secondary: #f3f6fb;
+  --surface-tertiary: #e8eef7;
+  --overlay: #ffffff;
+  --muted: #58626b;
+  --accent: #008adc;
+  --accent-foreground: #ffffff;
+  --border: #1e3280;
+  --separator: #c9d3ea;
+  --field-background: #ffffff;
+  --field-foreground: #101426;
+  --link: #1e3280;
+  --radius: 0.5rem;
+  --brand: #1e3280;
+  --brand-soft: #008adc;
+}
+.dark, [data-theme="dark"] {
+  --background: #0a0a16;
+  --foreground: #eef1fa;
+  --surface: #141420;
+  --surface-secondary: #1e1e2a;
+  --surface-tertiary: #282834;
+  --overlay: #1e1e2a;
+  --muted: #9ea8b1;
+  --accent: #0a94e6;
+  --accent-foreground: #ffffff;
+  --border: #0a94e6;
+  --separator: #32323e;
+  --field-background: #141420;
+  --field-foreground: #eef1fa;
+  --link: #6cc4ff;
+  --brand: #8fc7ff;
+  --brand-soft: #0a94e6;
+}
+
+html { font-family: var(--font-neutra); background: var(--background); color: var(--foreground); }
+body { margin: 0; min-height: 100vh; font-family: var(--font-neutra); }
+code, kbd, .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* KiiK dotted frame */
+.dotted-frame { border: 2px dotted var(--brand); border-radius: 0.5rem; }
+.dotted-frame-accent { border: 2px dotted var(--brand-soft); border-radius: 0.5rem; }
+.dropzone-active { border-style: solid; background: color-mix(in oklab, var(--accent) 10%, transparent); }
+.sc { font-family: var(--font-neutra-sc); }
+.plain { font-family: var(--font-neutra-plain); }
+.brand { color: var(--brand); }
+.brand-soft { color: var(--brand-soft); }
+
+/* Visible keyboard focus on our own interactive elements */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

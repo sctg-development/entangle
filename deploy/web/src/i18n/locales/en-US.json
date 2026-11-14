@@ -1,0 +1,96 @@
+{
+  "app": {
+    "company": "SCTG Development",
+    "product": "Wormhole",
+    "tagline": "Simple encrypted transfer",
+    "tagline2": "Works with any Magic Wormhole client",
+    "theme": "Toggle dark mode",
+    "language": "Language",
+    "settings": "Settings"
+  },
+  "tabs": {
+    "send": "Send",
+    "receive": "Receive"
+  },
+  "badge": {
+    "encrypted": "End-to-end encrypted",
+    "noWasm": "Your browser does not support WebAssembly. Use a modern browser or the wormhole command line."
+  },
+  "send": {
+    "dropTitle": "Drop files or a folder here",
+    "dropHint": "or choose below. Nothing is uploaded to a server: it is encrypted in your browser.",
+    "files": "Files",
+    "folder": "Folder",
+    "text": "Send text",
+    "textPlaceholder": "Type or paste a message",
+    "textHint": "Sent as message.txt: the receiver sees it inline.",
+    "submitText": "Send text",
+    "cancel": "Cancel",
+    "newTransfer": "New transfer",
+    "allocating": "Allocating a code…",
+    "waiting": "Waiting for the receiver…",
+    "transferring": "Transferring…",
+    "complete": "Transfer complete",
+    "codeTitle": "Share this code",
+    "codeHelp": "The receiver types it in Receive, or scans the QR code.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "share": "Share",
+    "qrLink": "Web link",
+    "qrWormhole": "Wormhole app",
+    "keepOpen": "Keep this page open until the transfer ends.",
+    "filesTotal": "{{count}} files, {{size}} (sent as a zip)",
+    "zipNote": "Several files are sent as one zip."
+  },
+  "receive": {
+    "title": "Enter the code",
+    "codeLabel": "Wormhole code",
+    "codePlaceholder": "7-crossover-clockwork",
+    "button": "Receive",
+    "connecting": "Establishing an encrypted connection…",
+    "waitingOffer": "Waiting for the file offer…",
+    "transferring": "Transferring…",
+    "complete": "Transfer complete",
+    "cancel": "Cancel",
+    "newTransfer": "Receive another",
+    "message": "Message received",
+    "copyText": "Copy",
+    "downloadText": "Download",
+    "copied": "Copied",
+    "codeHelp": "Single-use code. It is cleared as soon as you press Receive."
+  },
+  "settings": {
+    "title": "Servers",
+    "mailbox": "Mailbox (rendezvous) server",
+    "transit": "Transit relay (WebSocket)",
+    "hint": "Leave a field empty to use this site's server. ws:// and wss:// only. Applies to the next transfer, stays in this browser.",
+    "save": "Save",
+    "reset": "Reset to defaults",
+    "cancel": "Cancel",
+    "invalid": "Enter a valid ws:// or wss:// URL"
+  },
+  "about": {
+    "title": "How it works",
+    "p1": "This page is a Magic Wormhole client running entirely in your browser (WebAssembly). Keys are negotiated with SPAKE2 and data is encrypted with NaCl SecretBox on your device: the server never sees your files.",
+    "p2": "It talks to every Magic Wormhole client: send from the browser and receive on the command line, or the other way round.",
+    "compatible": "Compatible apps",
+    "entangle": "Handing over a coding session? Get entangle",
+    "entangleShort": "Get entangle"
+  },
+  "footer": {
+    "source": "Source code",
+    "basedOn": "Based on wormhole-page by Luca Martinetti (MIT)",
+    "rights": "© 2026 SCTG Development, Ronan Le Meillat"
+  },
+  "status": {
+    "allocating code...": "Allocating a code…",
+    "waiting for receiver...": "Waiting for the receiver…",
+    "transferring...": "Transferring…",
+    "establishing encrypted connection...": "Establishing an encrypted connection…",
+    "waiting for file offer...": "Waiting for the file offer…"
+  },
+  "offline": {
+    "title": "You are offline",
+    "body": "Connect to the internet to transfer files."
+  }
+}

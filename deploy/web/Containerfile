@@ -1,5 +1,8 @@
-# --- Build stage: Rust server + WASM ---
-FROM rust:1.94-slim AS builder
+# Copyright (c) 2026 Luca Martinetti (MIT License)
+# Modifications and additions (c) 2026 SCTG Development - Ronan Le Meillat (MIT License)
+
+# --- Build stage 1: Rust server + WebAssembly client ---
+FROM rust:1.94-slim AS rust
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 RUN cargo install wasm-pack
@@ -8,39 +11,31 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 
-# Build server
 RUN cargo build --release -p wormhole-page-server
-
-# Build WASM
 RUN cd crates/wormhole-wasm && wasm-pack build --target web --release
+
+# --- Build stage 2: React UI (HeroUI + Tailwind), SRI hashes, service worker ---
+FROM node:24-slim AS web
+
+WORKDIR /web
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json vite.config.ts index.html ./
+COPY scripts/ scripts/
+COPY src/ src/
+COPY public/ public/
+# The WebAssembly module is served from /static/wasm/ (hashed by scripts/postbuild.mjs)
+COPY --from=rust /build/crates/wormhole-wasm/pkg/wormhole_wasm_bg.wasm public/wasm/
+COPY --from=rust /build/crates/wormhole-wasm/pkg/wormhole_wasm.js public/wasm/
+RUN npm run build
 
 # --- Runtime stage ---
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/target/release/wormhole-page-server /usr/local/bin/
-COPY static/ /app/static/
-COPY --from=builder /build/crates/wormhole-wasm/pkg/wormhole_wasm_bg.wasm /app/static/wasm/
-COPY --from=builder /build/crates/wormhole-wasm/pkg/wormhole_wasm.js /app/static/wasm/
-
-# Generate SRI hashes and inject integrity attributes
-RUN WASM_JS_HASH=$(openssl dgst -sha384 -binary /app/static/wasm/wormhole_wasm.js | openssl base64 -A) && \
-    WASM_BG_HASH=$(openssl dgst -sha384 -binary /app/static/wasm/wormhole_wasm_bg.wasm | openssl base64 -A) && \
-    QR_JS_HASH=$(openssl dgst -sha384 -binary /app/static/qr.js | openssl base64 -A) && \
-    WASM_CLIENT_JS_HASH=$(openssl dgst -sha384 -binary /app/static/wasm-client.js | openssl base64 -A) && \
-    APP_JS_HASH=$(openssl dgst -sha384 -binary /app/static/app.js | openssl base64 -A) && \
-    sed -i "s|WASM_JS_SRI_HASH|sha384-${WASM_JS_HASH}|g" /app/static/index.html && \
-    sed -i "s|WASM_BG_SRI_HASH|sha384-${WASM_BG_HASH}|g" /app/static/index.html && \
-    sed -i 's|src="/static/qr.js"|src="/static/qr.js" integrity="sha384-'"${QR_JS_HASH}"'" crossorigin="anonymous"|' /app/static/index.html && \
-    sed -i 's|src="/static/wasm-client.js"|src="/static/wasm-client.js" integrity="sha384-'"${WASM_CLIENT_JS_HASH}"'" crossorigin="anonymous"|' /app/static/index.html && \
-    sed -i 's|src="/static/app.js"|src="/static/app.js" integrity="sha384-'"${APP_JS_HASH}"'" crossorigin="anonymous"|' /app/static/index.html && \
-    BUILD_HASH=$(cat /app/static/wasm/wormhole_wasm_bg.wasm /app/static/wasm/wormhole_wasm.js /app/static/app.js /app/static/style.css | openssl dgst -sha256 -binary | openssl base64 -A | head -c 8) && \
-    sed -i "s|BUILD_HASH|${BUILD_HASH}|g" /app/static/sw.js
-
-# Unprivileged user (the Helm chart also forces uid 10001); the files above are world-readable
-RUN useradd --system --uid 10001 --no-create-home wormhole
-USER 10001
+COPY --from=rust /build/target/release/wormhole-page-server /usr/local/bin/
+COPY --from=web /web/dist/ /app/static/
 
 EXPOSE 8080
 

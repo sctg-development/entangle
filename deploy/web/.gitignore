@@ -2,7 +2,8 @@
 crates/*/target/
 crates/wormhole-wasm/pkg/
 # built by `make wasm` / the Containerfile
-static/wasm/
+public/wasm/
+dist/
 node_modules/
 test-results/
 playwright-report/

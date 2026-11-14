@@ -1,6 +1,7 @@
 target
 node_modules
-static/wasm
+dist
+public/wasm
 test-results
 playwright-report
 .git

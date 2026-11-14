@@ -65,19 +65,8 @@ async function initWasm() {
   updateEncryptionBadge();
 }
 
-function updateEncryptionBadge() {
-  const el = document.getElementById('encryption-status');
-  if (!el) return;
-  if (wasmReady) {
-    el.textContent = '\uD83D\uDD12 End-to-end encrypted';
-    el.classList.remove('warning');
-    el.classList.add('encrypted');
-  } else {
-    el.textContent = 'Your browser does not support WebAssembly. Use a modern browser or the wormhole CLI.';
-    el.classList.remove('encrypted');
-    el.classList.add('warning');
-  }
-}
+// The encryption badge is rendered by the React UI (it reads wasmClient.ready).
+function updateEncryptionBadge() {}
 
 // --- Speed calculation ---
 let speedBytes = 0;

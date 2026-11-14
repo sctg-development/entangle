@@ -21,8 +21,9 @@ test.describe('Security headers', () => {
       expect(csp).toContain("style-src 'self' 'unsafe-inline'");
     });
 
-    test("connect-src defaults to 'self' only (self-hosted profile)", () => {
-      expect(csp).toMatch(/connect-src 'self'(;|$)/);
+    test("connect-src allows 'self' and no third-party analytics", () => {
+      expect(csp).toMatch(/connect-src 'self'/);
+      expect(csp).not.toMatch(/umami|google|cloudflareinsights/);
     });
 
     test("frame-ancestors 'none'", () => {

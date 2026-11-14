@@ -1,0 +1,96 @@
+{
+  "app": {
+    "company": "SCTG Development",
+    "product": "Wormhole",
+    "tagline": "Transferência cifrada e simples",
+    "tagline2": "Compatível com qualquer cliente Magic Wormhole",
+    "theme": "Alternar modo escuro",
+    "language": "Idioma",
+    "settings": "Definições"
+  },
+  "tabs": {
+    "send": "Enviar",
+    "receive": "Receber"
+  },
+  "badge": {
+    "encrypted": "Cifrado de ponta a ponta",
+    "noWasm": "O seu navegador não suporta WebAssembly. Utilize um navegador recente ou a linha de comandos do wormhole."
+  },
+  "send": {
+    "dropTitle": "Largue aqui ficheiros ou uma pasta",
+    "dropHint": "ou escolha abaixo. Nada é enviado para um servidor: a cifragem faz-se no seu navegador.",
+    "files": "Ficheiros",
+    "folder": "Pasta",
+    "text": "Enviar texto",
+    "textPlaceholder": "Escreva ou cole uma mensagem",
+    "textHint": "Enviado como message.txt: o destinatário vê-o diretamente.",
+    "submitText": "Enviar texto",
+    "cancel": "Cancelar",
+    "newTransfer": "Nova transferência",
+    "allocating": "A atribuir um código…",
+    "waiting": "A aguardar o destinatário…",
+    "transferring": "A transferir…",
+    "complete": "Transferência concluída",
+    "codeTitle": "Partilhe este código",
+    "codeHelp": "O destinatário escreve-o em Receber ou lê o código QR.",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "share": "Partilhar",
+    "qrLink": "Ligação web",
+    "qrWormhole": "Aplicação Wormhole",
+    "keepOpen": "Mantenha esta página aberta até a transferência terminar.",
+    "filesTotal": "{{count}} ficheiros, {{size}} (enviados num zip)",
+    "zipNote": "Vários ficheiros são enviados num único zip."
+  },
+  "receive": {
+    "title": "Introduza o código",
+    "codeLabel": "Código wormhole",
+    "codePlaceholder": "7-crossover-clockwork",
+    "button": "Receber",
+    "connecting": "A estabelecer uma ligação cifrada…",
+    "waitingOffer": "A aguardar a oferta de ficheiro…",
+    "transferring": "A transferir…",
+    "complete": "Transferência concluída",
+    "cancel": "Cancelar",
+    "newTransfer": "Receber outro",
+    "message": "Mensagem recebida",
+    "copyText": "Copiar",
+    "downloadText": "Transferir",
+    "copied": "Copiado",
+    "codeHelp": "Código de utilização única. É apagado assim que carrega em Receber."
+  },
+  "settings": {
+    "title": "Servidores",
+    "mailbox": "Servidor mailbox (encontro)",
+    "transit": "Retransmissor de trânsito (WebSocket)",
+    "hint": "Deixe um campo vazio para usar o servidor deste sítio. Apenas ws:// e wss://. Aplica-se à próxima transferência e fica neste navegador.",
+    "save": "Guardar",
+    "reset": "Repor predefinições",
+    "cancel": "Cancelar",
+    "invalid": "Introduza um URL ws:// ou wss:// válido"
+  },
+  "about": {
+    "title": "Como funciona",
+    "p1": "Esta página é um cliente Magic Wormhole que corre inteiramente no seu navegador (WebAssembly). As chaves são negociadas com SPAKE2 e os dados cifrados com NaCl SecretBox no seu dispositivo: o servidor nunca vê os seus ficheiros.",
+    "p2": "Funciona com todos os clientes Magic Wormhole: envie a partir do navegador e receba na linha de comandos, ou o contrário.",
+    "compatible": "Aplicações compatíveis",
+    "entangle": "Quer passar uma sessão de código a alguém? Obtenha o entangle",
+    "entangleShort": "Obter o entangle"
+  },
+  "footer": {
+    "source": "Código-fonte",
+    "basedOn": "Baseado no wormhole-page de Luca Martinetti (MIT)",
+    "rights": "© 2026 SCTG Development, Ronan Le Meillat"
+  },
+  "status": {
+    "allocating code...": "A atribuir um código…",
+    "waiting for receiver...": "A aguardar o destinatário…",
+    "transferring...": "A transferir…",
+    "establishing encrypted connection...": "A estabelecer uma ligação cifrada…",
+    "waiting for file offer...": "A aguardar a oferta de ficheiro…"
+  },
+  "offline": {
+    "title": "Sem ligação",
+    "body": "Ligue-se à Internet para transferir ficheiros."
+  }
+}

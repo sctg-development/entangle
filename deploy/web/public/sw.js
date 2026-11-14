@@ -2,18 +2,8 @@
 // Modifications and additions (c) 2026 SCTG Development - Ronan Le Meillat (MIT License)
 // See the LICENSE file in the project root.
 const CACHE_NAME = 'wormhole-BUILD_HASH';
-const SHELL_ASSETS = [
-  '/',
-  '/static/index.html',
-  '/static/style.css',
-  '/static/wasm-client.js',
-  '/static/app.js',
-  '/static/qr.js',
-  '/static/wasm/wormhole_wasm.js',
-  '/static/wasm/wormhole_wasm_bg.wasm',
-  '/static/manifest.json',
-  '/static/favicon.svg',
-];
+// Replaced by scripts/postbuild.mjs with the list of built files.
+const SHELL_ASSETS = /*PRECACHE*/ ['/'];
 
 const OFFLINE_HTML = `<!DOCTYPE html>
 <html lang="en">

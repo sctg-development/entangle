@@ -1,9 +1,12 @@
-.PHONY: build server wasm sri wasm-clean clean run test
+# Copyright (c) 2026 Luca Martinetti (MIT License)
+# Modifications and additions (c) 2026 SCTG Development - Ronan Le Meillat (MIT License)
+.PHONY: build server wasm web run test clean
 
 WASM_CRATE = crates/wormhole-wasm
-WASM_OUT = static/wasm
+WASM_OUT = public/wasm
 
-build: server wasm sri
+# Everything: Rust server, WebAssembly client, React UI (dist/)
+build: server wasm web
 
 server:
 	cargo build --release -p wormhole-page-server
@@ -14,36 +17,16 @@ wasm:
 	cp $(WASM_CRATE)/pkg/wormhole_wasm_bg.wasm $(WASM_OUT)/
 	cp $(WASM_CRATE)/pkg/wormhole_wasm.js $(WASM_OUT)/
 
-sri: wasm
-	@echo "Generating SRI hashes..."
-	@STYLE_HASH=$$(openssl dgst -sha384 -binary static/style.css | openssl base64 -A) && \
-	sed -i 's|href="/static/style.css"|href="/static/style.css" integrity="sha384-'"$$STYLE_HASH"'" crossorigin="anonymous"|' static/index.html && \
-	echo "  style.css: sha384-$$STYLE_HASH"
-	@WASM_JS_HASH=$$(openssl dgst -sha384 -binary static/wasm/wormhole_wasm.js | openssl base64 -A) && \
-	WASM_BG_HASH=$$(openssl dgst -sha384 -binary static/wasm/wormhole_wasm_bg.wasm | openssl base64 -A) && \
-	sed -i "s|WASM_JS_SRI_HASH|sha384-$$WASM_JS_HASH|g" static/index.html && \
-	sed -i "s|WASM_BG_SRI_HASH|sha384-$$WASM_BG_HASH|g" static/index.html && \
-	echo "  wormhole_wasm.js:     sha384-$$WASM_JS_HASH" && \
-	echo "  wormhole_wasm_bg.wasm: sha384-$$WASM_BG_HASH"
-	@QR_JS_HASH=$$(openssl dgst -sha384 -binary static/qr.js | openssl base64 -A) && \
-	WASM_CLIENT_JS_HASH=$$(openssl dgst -sha384 -binary static/wasm-client.js | openssl base64 -A) && \
-	APP_JS_HASH=$$(openssl dgst -sha384 -binary static/app.js | openssl base64 -A) && \
-	sed -i 's|src="/static/qr.js"|src="/static/qr.js" integrity="sha384-'"$$QR_JS_HASH"'" crossorigin="anonymous"|' static/index.html && \
-	sed -i 's|src="/static/wasm-client.js"|src="/static/wasm-client.js" integrity="sha384-'"$$WASM_CLIENT_JS_HASH"'" crossorigin="anonymous"|' static/index.html && \
-	sed -i 's|src="/static/app.js"|src="/static/app.js" integrity="sha384-'"$$APP_JS_HASH"'" crossorigin="anonymous"|' static/index.html && \
-	echo "  qr.js:            sha384-$$QR_JS_HASH" && \
-	echo "  wasm-client.js:   sha384-$$WASM_CLIENT_JS_HASH" && \
-	echo "  app.js:           sha384-$$APP_JS_HASH"
-	@BUILD_HASH=$$(cat static/wasm/wormhole_wasm_bg.wasm static/wasm/wormhole_wasm.js static/app.js static/style.css | openssl dgst -sha256 -binary | openssl base64 -A | head -c 8) && \
-	sed -i "s|BUILD_HASH|$$BUILD_HASH|g" static/sw.js && \
-	echo "  sw.js cache:      wormhole-$$BUILD_HASH"
+web:
+	npm ci
+	npm run build
 
 run: build
-	./target/release/wormhole-page-server --static-dir static/
+	./target/release/wormhole-page-server --static-dir dist/
 
 test:
 	npx playwright test
 
 clean:
 	cargo clean
-	rm -rf $(WASM_OUT)
+	rm -rf $(WASM_OUT) dist node_modules

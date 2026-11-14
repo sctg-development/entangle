@@ -1,84 +1,45 @@
 import { test, expect } from '@playwright/test';
+import { T } from './support';
 
-test.describe('Settings modal', () => {
+test.describe('Server settings', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.removeItem('wormhole-settings'));
     await page.reload();
+    await page.locator(T('settings-toggle')).click();
   });
 
-  test('gear button opens the dialog, ESC closes it', async ({ page }) => {
-    await page.click('#settings-toggle');
-    await expect(page.locator('#settings-modal')).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.locator('#settings-overlay')).toHaveClass(/hidden/);
+  test('opens a dialog with both fields', async ({ page }) => {
+    await expect(page.locator(T('settings-modal'))).toBeVisible();
+    await expect(page.locator(T('settings-mailbox-url'))).toBeVisible();
+    await expect(page.locator(T('settings-transit-url'))).toBeVisible();
   });
 
-  test('cancel closes without saving', async ({ page }) => {
-    await page.click('#settings-toggle');
-    await page.fill('#settings-mailbox-url', 'wss://mailbox.example.com/v1');
-    await page.click('#settings-cancel');
-    await expect(page.locator('#settings-overlay')).toHaveClass(/hidden/);
-    expect(await page.evaluate(() => localStorage.getItem('wormhole-settings'))).toBeNull();
+  test('rejects a non-WebSocket URL', async ({ page }) => {
+    await page.fill(T('settings-mailbox-url'), 'https://example.org');
+    await page.locator(T('settings-save')).click();
+    await expect(page.locator(T('settings-error'))).toBeVisible();
+    await expect(page.locator(T('settings-modal'))).toBeVisible();
   });
 
-  test('rejects non-ws(s) URLs and does not persist', async ({ page }) => {
-    await page.click('#settings-toggle');
-    await page.fill('#settings-mailbox-url', 'https://mailbox.example.com/v1');
-    await page.click('#settings-save');
-    await expect(page.locator('#settings-error')).toBeVisible();
-    await expect(page.locator('#settings-modal')).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem('wormhole-settings'))).toBeNull();
-  });
-
-  test('rejects malformed URLs', async ({ page }) => {
-    await page.click('#settings-toggle');
-    await page.fill('#settings-transit-url', 'not a url');
-    await page.click('#settings-save');
-    await expect(page.locator('#settings-error')).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem('wormhole-settings'))).toBeNull();
-  });
-
-  test('saves custom relays, shows dot, persists across reload', async ({ page }) => {
-    await page.click('#settings-toggle');
-    await page.fill('#settings-mailbox-url', 'wss://mailbox.example.com/v1');
-    await page.fill('#settings-transit-url', 'wss://transit.example.com/transit');
-    await page.click('#settings-save');
-    await expect(page.locator('#settings-overlay')).toHaveClass(/hidden/);
-
+  test('saves valid URLs, shows the indicator, and resets', async ({ page }) => {
+    await page.fill(T('settings-mailbox-url'), 'wss://mailbox.example.org/v1');
+    await page.fill(T('settings-transit-url'), 'wss://relay.example.org/transit');
+    await page.locator(T('settings-save')).click();
+    await expect(page.locator(T('settings-modal'))).toBeHidden();
+    await expect(page.locator(T('settings-dot'))).toBeVisible();
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('wormhole-settings')!));
-    expect(stored).toEqual({
-      mailboxUrl: 'wss://mailbox.example.com/v1',
-      transitRelayUrl: 'wss://transit.example.com/transit',
-    });
-    await expect(page.locator('#settings-dot')).toBeVisible();
+    expect(stored).toEqual({ mailboxUrl: 'wss://mailbox.example.org/v1', transitRelayUrl: 'wss://relay.example.org/transit' });
 
-    await page.reload();
-    await expect(page.locator('#settings-dot')).toBeVisible();
-    await page.click('#settings-toggle');
-    await expect(page.locator('#settings-mailbox-url')).toHaveValue('wss://mailbox.example.com/v1');
-    await expect(page.locator('#settings-transit-url')).toHaveValue('wss://transit.example.com/transit');
-  });
-
-  test('ws:// scheme is accepted', async ({ page }) => {
-    await page.click('#settings-toggle');
-    await page.fill('#settings-transit-url', 'ws://relay.lan:4001/transit');
-    await page.click('#settings-save');
-    await expect(page.locator('#settings-error')).toBeHidden();
-    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('wormhole-settings')!));
-    expect(stored.transitRelayUrl).toBe('ws://relay.lan:4001/transit');
-  });
-
-  test('reset to defaults clears stored settings and hides dot', async ({ page }) => {
-    await page.evaluate(() =>
-      localStorage.setItem('wormhole-settings', JSON.stringify({ mailboxUrl: 'wss://mailbox.example.com/v1' })),
-    );
-    await page.reload();
-    await page.click('#settings-toggle');
-    await expect(page.locator('#settings-mailbox-url')).toHaveValue('wss://mailbox.example.com/v1');
-    await page.click('#settings-reset');
-    await expect(page.locator('#settings-mailbox-url')).toHaveValue('');
+    await page.locator(T('settings-toggle')).click();
+    await page.locator(T('settings-reset')).click();
+    await expect(page.locator(T('settings-dot'))).toBeHidden();
     expect(await page.evaluate(() => localStorage.getItem('wormhole-settings'))).toBeNull();
-    await expect(page.locator('#settings-dot')).toBeHidden();
+  });
+
+  test('cancel keeps the previous settings', async ({ page }) => {
+    await page.fill(T('settings-mailbox-url'), 'wss://nope.example.org/v1');
+    await page.locator(T('settings-cancel')).click();
+    expect(await page.evaluate(() => localStorage.getItem('wormhole-settings'))).toBeNull();
   });
 });

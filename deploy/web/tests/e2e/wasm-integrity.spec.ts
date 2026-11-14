@@ -1,10 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-
-const ROOT = resolve(__dirname, '../..');
-
 test.describe('WASM SRI integrity', () => {
   test('wasm binary hash matches meta[name="wasm-integrity"]', async ({ request }) => {
     // Get the expected hash from the HTML
@@ -70,5 +64,20 @@ test.describe('WASM SRI integrity', () => {
     );
 
     expect(integrityErrors).toEqual([]);
+  });
+
+  test('every script and stylesheet carries a matching SRI hash', async ({ request }) => {
+    const html = await (await request.get('/')).text();
+    const tags = [...html.matchAll(/<(?:script|link)\b[^>]*?(?:src|href)="(\/static\/[^"]+)"[^>]*>/g)]
+      .filter((m) => /<script|rel="(stylesheet|modulepreload)"/.test(m[0]));
+    expect(tags.length).toBeGreaterThan(3);
+    for (const [tag, url] of tags) {
+      const integrity = tag.match(/integrity="(sha384-[^"]+)"/)?.[1];
+      test.skip(!integrity && url.includes('wasm/'), 'wasm hashes not injected');
+      expect(integrity, `${url} has no integrity`).toBeTruthy();
+      const body = await (await request.get(url)).body();
+      const actual = 'sha384-' + Buffer.from(await crypto.subtle.digest('SHA-384', body)).toString('base64');
+      expect(actual, url).toBe(integrity);
+    }
   });
 });

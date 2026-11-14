@@ -1,0 +1,96 @@
+{
+  "app": {
+    "company": "SCTG Development",
+    "product": "Wormhole",
+    "tagline": "Transfert chiffré, tout simple",
+    "tagline2": "Compatible avec tout client Magic Wormhole",
+    "theme": "Basculer le mode sombre",
+    "language": "Langue",
+    "settings": "Réglages"
+  },
+  "tabs": {
+    "send": "Envoyer",
+    "receive": "Recevoir"
+  },
+  "badge": {
+    "encrypted": "Chiffré de bout en bout",
+    "noWasm": "Votre navigateur ne gère pas WebAssembly. Utilisez un navigateur récent ou la ligne de commande wormhole."
+  },
+  "send": {
+    "dropTitle": "Déposez des fichiers ou un dossier ici",
+    "dropHint": "ou choisissez ci-dessous. Rien n’est envoyé à un serveur : le chiffrement se fait dans votre navigateur.",
+    "files": "Fichiers",
+    "folder": "Dossier",
+    "text": "Envoyer du texte",
+    "textPlaceholder": "Saisissez ou collez un message",
+    "textHint": "Envoyé sous le nom message.txt : le destinataire le voit directement.",
+    "submitText": "Envoyer le texte",
+    "cancel": "Annuler",
+    "newTransfer": "Nouveau transfert",
+    "allocating": "Attribution d’un code…",
+    "waiting": "En attente du destinataire…",
+    "transferring": "Transfert en cours…",
+    "complete": "Transfert terminé",
+    "codeTitle": "Partagez ce code",
+    "codeHelp": "Le destinataire le saisit dans Recevoir, ou scanne le QR code.",
+    "copy": "Copier",
+    "copied": "Copié",
+    "share": "Partager",
+    "qrLink": "Lien web",
+    "qrWormhole": "Appli Wormhole",
+    "keepOpen": "Gardez cette page ouverte jusqu’à la fin du transfert.",
+    "filesTotal": "{{count}} fichiers, {{size}} (envoyés dans un zip)",
+    "zipNote": "Plusieurs fichiers sont envoyés dans un seul zip."
+  },
+  "receive": {
+    "title": "Saisissez le code",
+    "codeLabel": "Code wormhole",
+    "codePlaceholder": "7-crossover-clockwork",
+    "button": "Recevoir",
+    "connecting": "Établissement d’une connexion chiffrée…",
+    "waitingOffer": "En attente de l’offre de fichier…",
+    "transferring": "Transfert en cours…",
+    "complete": "Transfert terminé",
+    "cancel": "Annuler",
+    "newTransfer": "Recevoir autre chose",
+    "message": "Message reçu",
+    "copyText": "Copier",
+    "downloadText": "Télécharger",
+    "copied": "Copié",
+    "codeHelp": "Code à usage unique. Il est effacé dès que vous appuyez sur Recevoir."
+  },
+  "settings": {
+    "title": "Serveurs",
+    "mailbox": "Serveur mailbox (rendez-vous)",
+    "transit": "Relais de transit (WebSocket)",
+    "hint": "Laissez un champ vide pour utiliser le serveur de ce site. ws:// et wss:// uniquement. S’applique au prochain transfert, reste dans ce navigateur.",
+    "save": "Enregistrer",
+    "reset": "Valeurs par défaut",
+    "cancel": "Annuler",
+    "invalid": "Saisissez une URL ws:// ou wss:// valide"
+  },
+  "about": {
+    "title": "Comment ça marche",
+    "p1": "Cette page est un client Magic Wormhole qui s’exécute entièrement dans votre navigateur (WebAssembly). Les clés sont négociées avec SPAKE2 et les données chiffrées avec NaCl SecretBox sur votre appareil : le serveur ne voit jamais vos fichiers.",
+    "p2": "Elle dialogue avec tous les clients Magic Wormhole : envoyez depuis le navigateur et recevez en ligne de commande, ou l’inverse.",
+    "compatible": "Applications compatibles",
+    "entangle": "Passer le relais sur une session de code ? Obtenez entangle",
+    "entangleShort": "Obtenir entangle"
+  },
+  "footer": {
+    "source": "Code source",
+    "basedOn": "Basé sur wormhole-page de Luca Martinetti (MIT)",
+    "rights": "© 2026 SCTG Development, Ronan Le Meillat"
+  },
+  "status": {
+    "allocating code...": "Attribution d’un code…",
+    "waiting for receiver...": "En attente du destinataire…",
+    "transferring...": "Transfert en cours…",
+    "establishing encrypted connection...": "Établissement d’une connexion chiffrée…",
+    "waiting for file offer...": "En attente de l’offre de fichier…"
+  },
+  "offline": {
+    "title": "Vous êtes hors ligne",
+    "body": "Connectez-vous à Internet pour transférer des fichiers."
+  }
+}
