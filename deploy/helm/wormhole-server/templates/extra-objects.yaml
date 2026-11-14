@@ -1,0 +1,4 @@
+{{- range .Values.extraObjects }}
+---
+{{ include "wormhole.tplvalue" (dict "value" . "context" $) }}
+{{- end }}

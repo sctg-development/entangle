@@ -1,50 +1,160 @@
+# Helm values for the self-hosted wormhole servers (mailbox + transit relay + optional browser page).
+# See README.md for the full list and for cluster-specific recipes.
+
+nameOverride: ""
+# Prefix of every resource name (default: the release name). Resources are <fullname>-mailbox, -relay, -page.
+fullnameOverride: ""
+commonLabels: {}
+imagePullSecrets: []
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Mailbox (rendezvous): WebSocket on 4000 (/v1), state in SQLite. Always one replica (SQLite on a ReadWriteOnce volume).
+# The mailbox only keeps in-flight rendezvous: losing its volume loses no user data.
 mailbox:
-  image: docker.io/sctg/wormhole-mailbox:latest
+  image:
+    repository: docker.io/sctg/wormhole-mailbox
+    # Only the floating tag is published today: pin a digest in production (image.digest: sha256:...).
+    tag: latest
+    digest: ""
+    pullPolicy: ""        # "" = Always for tag "latest", IfNotPresent otherwise
   persistence:
     enabled: true
+    existingClaim: ""     # use a PVC you created yourself
     size: 1Gi
-    storageClassName: ""   # "" = cluster default
+    storageClassName: ""  # "" = cluster default
+    accessModes: [ReadWriteOnce]
   resources:
     requests: {cpu: 10m, memory: 48Mi}
     limits: {memory: 128Mi}
+  podLabels: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  priorityClassName: ""
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile: {type: RuntimeDefault}
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: [ALL]}
+  # The mailbox answers HTTP 200 on / (checked on sctg/wormhole-mailbox)
+  livenessProbe: {httpGet: {path: /, port: http}, initialDelaySeconds: 10, periodSeconds: 20, timeoutSeconds: 3}
+  readinessProbe: {httpGet: {path: /, port: http}, periodSeconds: 10, timeoutSeconds: 3}
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Transit relay: raw TCP on 4001, stateless. Carries only already-encrypted bytes.
 relay:
-  image: docker.io/sctg/wormhole-relay:latest
+  image:
+    repository: docker.io/sctg/wormhole-relay
+    tag: latest
+    digest: ""
+    pullPolicy: ""
   replicas: 2
   resources:
     requests: {cpu: 10m, memory: 32Mi}
     limits: {memory: 128Mi}
-  # The transit relay is raw TCP on 4001. How you expose it depends on your cluster.
+  # Spread the replicas over nodes (soft constraint). Set topologySpreadConstraints for full control (templated).
+  spread: {enabled: true, topologyKey: kubernetes.io/hostname, maxSkew: 1, whenUnsatisfiable: ScheduleAnyway}
+  topologySpreadConstraints: []
+  podDisruptionBudget: {enabled: false, minAvailable: 1}
+  podLabels: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  priorityClassName: ""
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    seccompProfile: {type: RuntimeDefault}
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: [ALL]}
+  livenessProbe: {tcpSocket: {port: transit}, initialDelaySeconds: 10, periodSeconds: 20, timeoutSeconds: 3}
+  readinessProbe: {tcpSocket: {port: transit}, periodSeconds: 10, timeoutSeconds: 3}
+  # How the raw TCP port is exposed depends on the cluster:
+  #   ClusterIP    + extraObjects  : Gateway API TCPRoute, an ingress controller's TCP support... (see README)
+  #   NodePort / LoadBalancer      : directly
   service:
     type: ClusterIP        # ClusterIP | NodePort | LoadBalancer
-    nodePort: null         # set when type=NodePort
+    nodePort: null         # with type=NodePort
+    loadBalancerIP: ""
+    externalTrafficPolicy: ""   # Cluster | Local (NodePort / LoadBalancer)
     annotations: {}
 
-# Optional browser page (send/receive in the browser, link to entangle).
-# Public image docker.io/sctg/wormhole-page (sources: deploy/web). Needs ingress.enabled
-# to be reachable: /v1 goes to the mailbox, everything else to the page.
+# ----------------------------------------------------------------------------------------------------------------------
+# Optional browser page (send/receive in the browser, link to entangle), with a /transit WebSocket-to-TCP bridge to the relay.
+# Needs ingress.enabled to be reachable: /v1 goes to the mailbox, everything else to the page.
 page:
   enabled: true
-  image: docker.io/sctg/wormhole-page:latest
-  # Wormhole AppID; must match the entangle clients' --app-id.
-  appId: github.com/sctg-development/entangle
-  entangleUrl: https://github.com/sctg-development/entangle/releases/latest
+  image:
+    repository: docker.io/sctg/wormhole-page
+    tag: ""                # "" = the chart appVersion (the entangle release the page is built from)
+    digest: ""
+    pullPolicy: ""
+  replicas: 1
+  config:
+    profile: ""            # self-hosted (default) | official
+    # Wormhole AppID; peers meet only when it is identical on both sides (entangle >= 0.8.1 default).
+    appId: github.com/sctg-development/entangle
+    entangleUrl: https://github.com/sctg-development/entangle/releases/latest
+    mailboxUrl: ""         # WebSocket URL given to browsers; "" = /v1 on the page's own host
+    transitHint: ""        # tcp://host:port advertised to CLI peers; "" = tcp://<page host>:4001
+    cspConnectSrc: ""      # Content-Security-Policy connect-src override
+  extraEnv: []             # extra container env (list of name/value or valueFrom)
   resources:
     requests: {cpu: 10m, memory: 16Mi}
     limits: {memory: 128Mi}
+  podDisruptionBudget: {enabled: false, minAvailable: 1}
+  podLabels: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  priorityClassName: ""
+  # The published image has no USER (runs as root); the files are world-readable, so a fixed uid works (checked with 0.8.1).
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    seccompProfile: {type: RuntimeDefault}
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: {drop: [ALL]}
+  livenessProbe: {httpGet: {path: /health, port: http}, initialDelaySeconds: 5, periodSeconds: 20, timeoutSeconds: 3}
+  readinessProbe: {httpGet: {path: /health, port: http}, periodSeconds: 10, timeoutSeconds: 3}
 
-# WebSocket endpoint (wss://<host>/v1) for the mailbox.
+# ----------------------------------------------------------------------------------------------------------------------
+# One host for everything: /v1 -> mailbox (WebSocket), / -> page (or / -> mailbox when page.enabled=false).
+# WebSockets need a long idle timeout on the controller, for /v1 and for the page's /transit bridge. Examples:
+#   cert-manager.io/cluster-issuer: letsencrypt
+#   nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"     # ingress-nginx
+#   haproxy.org/timeout-tunnel: "1h"                           # haproxytech kubernetes-ingress
 ingress:
   enabled: false
   className: ""
   host: wormhole.example.org
+  pathType: Prefix
   annotations: {}
-    # cert-manager.io/cluster-issuer: letsencrypt
-    # nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    # haproxy.org/timeout-tunnel: "1h"
   tls:
     enabled: true
     secretName: wormhole-tls
 
-podSecurityContext:
-  fsGroup: 10001
+# Extra Kubernetes objects rendered with the release (strings or maps, both are templated with `tpl`).
+# Typical use: the relay's TCP route. Example for Gateway API (TCPRoute):
+#   extraObjects:
+#     - apiVersion: gateway.networking.k8s.io/v1alpha2
+#       kind: TCPRoute
+#       metadata: {name: '{{ include "wormhole.fullname" . }}-relay'}
+#       spec:
+#         parentRefs: [{name: my-gateway, sectionName: transit}]
+#         rules: [{backendRefs: [{name: '{{ include "wormhole.fullname" . }}-relay', port: 4001}]}]
+extraObjects: []

@@ -38,6 +38,10 @@ RUN WASM_JS_HASH=$(openssl dgst -sha384 -binary /app/static/wasm/wormhole_wasm.j
     BUILD_HASH=$(cat /app/static/wasm/wormhole_wasm_bg.wasm /app/static/wasm/wormhole_wasm.js /app/static/app.js /app/static/style.css | openssl dgst -sha256 -binary | openssl base64 -A | head -c 8) && \
     sed -i "s|BUILD_HASH|${BUILD_HASH}|g" /app/static/sw.js
 
+# Unprivileged user (the Helm chart also forces uid 10001); the files above are world-readable
+RUN useradd --system --uid 10001 --no-create-home wormhole
+USER 10001
+
 EXPOSE 8080
 
 ENTRYPOINT ["wormhole-page-server"]

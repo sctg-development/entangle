@@ -1,6 +1,15 @@
 apiVersion: v2
 name: wormhole-server
-description: Self-hosted magic-wormhole mailbox (rendezvous) and transit relay, for entangle
+description: Self-hosted magic-wormhole mailbox (rendezvous), transit relay and browser page, for entangle
 type: application
-version: 0.1.0
-appVersion: "latest"
+version: 0.2.0
+# Version of the entangle release the page image is built from (page image tag defaults to it)
+appVersion: "0.8.1"
+kubeVersion: ">=1.25.0-0"
+home: https://github.com/sctg-development/entangle
+sources:
+  - https://github.com/sctg-development/entangle/tree/main/deploy
+keywords: [magic-wormhole, entangle, mailbox, transit-relay]
+maintainers:
+  - name: SCTG Development
+    url: https://github.com/sctg-development
