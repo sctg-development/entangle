@@ -55,11 +55,11 @@ helm install wormhole deploy/helm/wormhole-server \
 # add --set page.enabled=false to skip the browser page
 ```
 
-The mailbox runs as one replica with a 1 Gi volume (SQLite). The relay is
-stateless and runs 2 replicas. WebSocket needs a long idle timeout on your
-ingress (see the commented annotations in `values.yaml`). The relay is raw TCP:
-expose it with `LoadBalancer`, `NodePort` (`relay.service.nodePort`), or your
-ingress controller's TCP support. `helm status wormhole` prints the client settings.
+The mailbox runs as one replica with a 1 Gi volume (SQLite). The relay is stateless and runs 2 replicas. All pods run
+non-root with a read-only root filesystem. WebSocket needs a long idle timeout on your ingress. The relay is raw TCP: expose it
+with `LoadBalancer`, `NodePort`, or your controller's TCP/Gateway support through `extraObjects`.
+`helm status wormhole` prints the client settings and warns about common misconfigurations.
+Full reference (values, relay exposure recipes, image pinning): [`helm/wormhole-server/README.md`](helm/wormhole-server/README.md).
 
 ## 3. Kubernetes (Argo CD)
 

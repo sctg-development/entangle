@@ -1,41 +1,86 @@
 {{- if .Values.page.enabled }}
+{{- $fullname := include "wormhole.fullname" . -}}
+{{- $ctx := dict "root" . "component" "page" -}}
+{{- $p := .Values.page -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-page
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  name: {{ $fullname }}-page
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ $p.replicas }}
   selector:
-    matchLabels: {app: {{ .Release.Name }}-page}
+    matchLabels: {{- include "wormhole.selectorLabels" $ctx | nindent 6 }}
   template:
     metadata:
-      labels: {app: {{ .Release.Name }}-page}
+      labels:
+        {{- include "wormhole.labels" $ctx | nindent 8 }}
+        {{- with $p.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $p.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {{- toYaml $p.podSecurityContext | nindent 8 }}
+      {{- include "wormhole.scheduling" $p | nindent 6 }}
       containers:
         - name: page
-          image: {{ .Values.page.image }}
+          image: {{ include "wormhole.image" (dict "root" . "image" $p.image) }}
+          imagePullPolicy: {{ include "wormhole.pullPolicy" (dict "root" . "image" $p.image) }}
           ports:
-            - containerPort: 8080
+            - {name: http, containerPort: 8080}
           env:
-            - {name: TRANSIT_RELAY, value: "{{ .Release.Name }}-relay:4001"}
-            - {name: APP_ID, value: {{ .Values.page.appId | quote }}}
-            - {name: ENTANGLE_URL, value: {{ .Values.page.entangleUrl | quote }}}
-          readinessProbe:
-            httpGet: {path: /health, port: 8080}
-          resources: {{- toYaml .Values.page.resources | nindent 12 }}
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities: {drop: [ALL]}
+            - {name: TRANSIT_RELAY, value: "{{ $fullname }}-relay:4001"}
+            - {name: APP_ID, value: {{ $p.config.appId | quote }}}
+            - {name: ENTANGLE_URL, value: {{ $p.config.entangleUrl | quote }}}
+            {{- with $p.config.profile }}
+            - {name: WORMHOLE_PROFILE, value: {{ . | quote }}}
+            {{- end }}
+            {{- with $p.config.mailboxUrl }}
+            - {name: MAILBOX_URL, value: {{ . | quote }}}
+            {{- end }}
+            {{- with $p.config.transitHint }}
+            - {name: TRANSIT_HINT, value: {{ . | quote }}}
+            {{- end }}
+            {{- with $p.config.cspConnectSrc }}
+            - {name: CSP_CONNECT_SRC, value: {{ . | quote }}}
+            {{- end }}
+            {{- with $p.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with $p.livenessProbe }}
+          livenessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $p.readinessProbe }}
+          readinessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml $p.resources | nindent 12 }}
+          securityContext: {{- toYaml $p.securityContext | nindent 12 }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-page
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  name: {{ $fullname }}-page
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
 spec:
-  selector: {app: {{ .Release.Name }}-page}
+  selector: {{- include "wormhole.selectorLabels" $ctx | nindent 4 }}
   ports:
-    - {name: http, port: 8080, targetPort: 8080}
+    - {name: http, port: 8080, targetPort: http}
+{{- if and $p.podDisruptionBudget.enabled (gt (int $p.replicas) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $fullname }}-page
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
+spec:
+  minAvailable: {{ $p.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{- include "wormhole.selectorLabels" $ctx | nindent 6 }}
+{{- end }}
 {{- end }}

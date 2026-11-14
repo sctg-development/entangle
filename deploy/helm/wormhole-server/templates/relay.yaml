@@ -1,49 +1,95 @@
+{{- $fullname := include "wormhole.fullname" . -}}
+{{- $ctx := dict "root" . "component" "relay" -}}
+{{- $r := .Values.relay -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-relay
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  name: {{ $fullname }}-relay
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
 spec:
-  replicas: {{ .Values.relay.replicas }}
+  replicas: {{ $r.replicas }}
   selector:
-    matchLabels: {app: {{ .Release.Name }}-relay}
+    matchLabels: {{- include "wormhole.selectorLabels" $ctx | nindent 6 }}
   template:
     metadata:
-      labels: {app: {{ .Release.Name }}-relay}
+      labels:
+        {{- include "wormhole.labels" $ctx | nindent 8 }}
+        {{- with $r.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $r.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {{- toYaml $r.podSecurityContext | nindent 8 }}
+      {{- include "wormhole.scheduling" $r | nindent 6 }}
+      {{- if $r.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "wormhole.tplvalue" (dict "value" $r.topologySpreadConstraints "context" .) | nindent 8 }}
+      {{- else if $r.spread.enabled }}
       topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
+        - maxSkew: {{ $r.spread.maxSkew }}
+          topologyKey: {{ $r.spread.topologyKey }}
+          whenUnsatisfiable: {{ $r.spread.whenUnsatisfiable }}
           labelSelector:
-            matchLabels: {app: {{ .Release.Name }}-relay}
+            matchLabels: {{- include "wormhole.selectorLabels" $ctx | nindent 14 }}
+      {{- end }}
       containers:
         - name: relay
-          image: {{ .Values.relay.image }}
+          image: {{ include "wormhole.image" (dict "root" . "image" $r.image) }}
+          imagePullPolicy: {{ include "wormhole.pullPolicy" (dict "root" . "image" $r.image) }}
           ports:
-            - containerPort: 4001
-          readinessProbe:
-            tcpSocket: {port: 4001}
-          resources: {{- toYaml .Values.relay.resources | nindent 12 }}
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities: {drop: [ALL]}
+            - {name: transit, containerPort: 4001}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+          {{- with $r.livenessProbe }}
+          livenessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $r.readinessProbe }}
+          readinessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml $r.resources | nindent 12 }}
+          securityContext: {{- toYaml $r.securityContext | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-relay
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
-  {{- with .Values.relay.service.annotations }}
+  name: {{ $fullname }}-relay
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
+  {{- with $r.service.annotations }}
   annotations: {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  type: {{ .Values.relay.service.type }}
-  selector: {app: {{ .Release.Name }}-relay}
+  type: {{ $r.service.type }}
+  {{- if and (eq $r.service.type "LoadBalancer") $r.service.loadBalancerIP }}
+  loadBalancerIP: {{ $r.service.loadBalancerIP }}
+  {{- end }}
+  {{- if and (ne $r.service.type "ClusterIP") $r.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ $r.service.externalTrafficPolicy }}
+  {{- end }}
+  selector: {{- include "wormhole.selectorLabels" $ctx | nindent 4 }}
   ports:
     - name: transit
       port: 4001
-      targetPort: 4001
-      {{- if and (eq .Values.relay.service.type "NodePort") .Values.relay.service.nodePort }}
-      nodePort: {{ .Values.relay.service.nodePort }}
+      targetPort: transit
+      {{- if and (eq $r.service.type "NodePort") $r.service.nodePort }}
+      nodePort: {{ $r.service.nodePort }}
       {{- end }}
+{{- if and $r.podDisruptionBudget.enabled (gt (int $r.replicas) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $fullname }}-relay
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
+spec:
+  minAvailable: {{ $r.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{- include "wormhole.selectorLabels" $ctx | nindent 6 }}
+{{- end }}

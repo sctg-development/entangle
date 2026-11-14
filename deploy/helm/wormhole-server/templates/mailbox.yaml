@@ -1,108 +1,84 @@
-{{- if .Values.mailbox.persistence.enabled }}
+{{- $fullname := include "wormhole.fullname" . -}}
+{{- $ctx := dict "root" . "component" "mailbox" -}}
+{{- $m := .Values.mailbox -}}
+{{- if and $m.persistence.enabled (not $m.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-mailbox-data
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  name: {{ $fullname }}-mailbox-data
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
 spec:
-  accessModes: [ReadWriteOnce]
-  {{- with .Values.mailbox.persistence.storageClassName }}
+  accessModes: {{- toYaml $m.persistence.accessModes | nindent 4 }}
+  {{- with $m.persistence.storageClassName }}
   storageClassName: {{ . }}
   {{- end }}
   resources:
     requests:
-      storage: {{ .Values.mailbox.persistence.size }}
+      storage: {{ $m.persistence.size }}
 ---
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-mailbox
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  name: {{ $fullname }}-mailbox
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
 spec:
   replicas: 1
   strategy:
-    type: Recreate  # SQLite on a ReadWriteOnce volume
+    type: Recreate  # SQLite on a ReadWriteOnce volume: never two pods at once
   selector:
-    matchLabels: {app: {{ .Release.Name }}-mailbox}
+    matchLabels: {{- include "wormhole.selectorLabels" $ctx | nindent 6 }}
   template:
     metadata:
-      labels: {app: {{ .Release.Name }}-mailbox}
+      labels:
+        {{- include "wormhole.labels" $ctx | nindent 8 }}
+        {{- with $m.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $m.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
-      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {{- toYaml $m.podSecurityContext | nindent 8 }}
+      {{- include "wormhole.scheduling" $m | nindent 6 }}
       containers:
         - name: mailbox
-          image: {{ .Values.mailbox.image }}
+          image: {{ include "wormhole.image" (dict "root" . "image" $m.image) }}
+          imagePullPolicy: {{ include "wormhole.pullPolicy" (dict "root" . "image" $m.image) }}
           ports:
-            - containerPort: 4000
+            - {name: http, containerPort: 4000}
           volumeMounts:
             - {name: data, mountPath: /data}
-          readinessProbe:
-            tcpSocket: {port: 4000}
-          resources: {{- toYaml .Values.mailbox.resources | nindent 12 }}
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities: {drop: [ALL]}
+            - {name: tmp, mountPath: /tmp}
+          {{- with $m.livenessProbe }}
+          livenessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $m.readinessProbe }}
+          readinessProbe: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml $m.resources | nindent 12 }}
+          securityContext: {{- toYaml $m.securityContext | nindent 12 }}
       volumes:
         - name: data
-          {{- if .Values.mailbox.persistence.enabled }}
-          persistentVolumeClaim: {claimName: {{ .Release.Name }}-mailbox-data}
+          {{- if $m.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-mailbox-data" $fullname) $m.persistence.existingClaim }}
           {{- else }}
           emptyDir: {}
           {{- end }}
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-mailbox
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
+  name: {{ $fullname }}-mailbox
+  labels: {{- include "wormhole.labels" $ctx | nindent 4 }}
 spec:
-  selector: {app: {{ .Release.Name }}-mailbox}
+  selector: {{- include "wormhole.selectorLabels" $ctx | nindent 4 }}
   ports:
-    - {name: ws, port: 4000, targetPort: 4000}
-{{- if .Values.ingress.enabled }}
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ .Release.Name }}-mailbox
-  labels: {{- include "wormhole.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
-  annotations: {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  {{- with .Values.ingress.className }}
-  ingressClassName: {{ . }}
-  {{- end }}
-  {{- if .Values.ingress.tls.enabled }}
-  tls:
-    - hosts: [{{ .Values.ingress.host }}]
-      secretName: {{ .Values.ingress.tls.secretName }}
-  {{- end }}
-  rules:
-    - host: {{ .Values.ingress.host }}
-      http:
-        paths:
-          {{- if .Values.page.enabled }}
-          # /v1 is the mailbox WebSocket; the page (and its /transit bridge) serves the rest
-          - path: /v1
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Release.Name }}-mailbox
-                port: {number: 4000}
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Release.Name }}-page
-                port: {number: 8080}
-          {{- else }}
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Release.Name }}-mailbox
-                port: {number: 4000}
-          {{- end }}
-{{- end }}
+    - {name: http, port: 4000, targetPort: http}

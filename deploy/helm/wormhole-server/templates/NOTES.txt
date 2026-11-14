@@ -1,7 +1,24 @@
+wormhole-server {{ .Chart.Version }} installed as "{{ include "wormhole.fullname" . }}".
+
 Point entangle at your servers:
 
   export ENTANGLE_RENDEZVOUS=wss://{{ .Values.ingress.host }}/v1
-  export ENTANGLE_RELAY=<public host or IP of the relay>:4001   # service: {{ .Release.Name }}-relay ({{ .Values.relay.service.type }})
+  export ENTANGLE_RELAY=<public host or IP of the relay>:4001
 
-The relay speaks raw TCP: expose port 4001 with a LoadBalancer, a NodePort, or
-your ingress controller's TCP support.
+{{- if not .Values.ingress.enabled }}
+
+WARNING: ingress.enabled=false: nothing exposes the mailbox (service {{ include "wormhole.fullname" . }}-mailbox:4000){{ if .Values.page.enabled }} nor the page{{ end }}.
+{{- end }}
+{{- if and (eq .Values.relay.service.type "ClusterIP") (not .Values.extraObjects) }}
+
+WARNING: the relay is raw TCP (port 4001) and its service is ClusterIP with no extraObjects: it is only reachable inside the cluster.
+Expose it with relay.service.type=NodePort|LoadBalancer, or route it from your ingress/Gateway through extraObjects (see README.md).
+{{- end }}
+{{- if and .Values.mailbox.persistence.enabled (not .Values.mailbox.persistence.existingClaim) (eq .Values.mailbox.persistence.storageClassName "") }}
+
+Mailbox volume: {{ .Values.mailbox.persistence.size }} on the cluster's default StorageClass (mailbox.persistence.storageClassName to choose).
+{{- end }}
+{{- if or (eq .Values.mailbox.image.tag "latest") (eq .Values.relay.image.tag "latest") }}
+
+Note: the mailbox/relay images use the floating "latest" tag; pin mailbox.image.digest / relay.image.digest for reproducible deployments.
+{{- end }}
