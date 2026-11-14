@@ -41,7 +41,9 @@ port is not reachable from outside. The public multi-arch (amd64 + arm64) images
 default, so nothing needs to be built. To build them yourself from
 `deploy/docker/Dockerfile`:
 `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.
-The Helm chart and Argo CD application use the same public images.
+The Helm chart and Argo CD application use the same public images. On every release tag `vX.Y.Z`, the
+`.github/workflows/docker-image.yml` workflow publishes the mailbox, relay and page images with the tags `X.Y.Z`, `X.Y` and `latest`
+(a manual run only moves `latest`).
 
 ## 2. Kubernetes (Helm)
 

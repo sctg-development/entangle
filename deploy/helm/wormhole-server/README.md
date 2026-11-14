@@ -68,10 +68,12 @@ through `ingress.annotations` (ingress-nginx: `nginx.ingress.kubernetes.io/proxy
 
 ## Pinning images
 
-Only the floating `latest` tag is published for the mailbox and relay images (the page has release tags). For reproducible
-deployments pin the digest: `mailbox.image.digest=sha256:...`, `relay.image.digest=sha256:...`
-(`docker buildx imagetools inspect docker.io/sctg/wormhole-mailbox:latest` prints it). A digest wins over the tag; the pull
-policy defaults to `Always` for a `latest` tag and `IfNotPresent` otherwise.
+Since the release that follows 0.8.1, `.github/workflows/docker-image.yml` publishes the mailbox, relay and page images with the
+release tags (`X.Y.Z`, `X.Y`, `latest`). The images of 0.8.1 and earlier only exist as `latest` for the mailbox and the relay (the
+page has its release tags). Until you move to a released tag, pin the digest for reproducible deployments:
+`mailbox.image.digest=sha256:...`, `relay.image.digest=sha256:...`
+(`docker buildx imagetools inspect docker.io/sctg/wormhole-mailbox:latest` prints it), or set `mailbox.image.tag` / `relay.image.tag`
+to the release. A digest wins over the tag; the pull policy defaults to `Always` for a `latest` tag and `IfNotPresent` otherwise.
 
 ## Values
 

@@ -1,0 +1,50 @@
+name: Docker images
+
+# Builds and pushes the multi-arch (amd64 + arm64) Docker images to Docker Hub, one job per image:
+#   sctg/wormhole-mailbox  deploy/docker/Dockerfile (SERVER=mailbox)  magic-wormhole mailbox server
+#   sctg/wormhole-relay    deploy/docker/Dockerfile (SERVER=relay)    magic-wormhole transit relay
+#   sctg/wormhole-page     deploy/web/Containerfile                   browser page and transit bridge
+# On every release tag vX.Y.Z the three images get the tags X.Y.Z, X.Y and latest, so that the Helm chart
+# (deploy/helm/wormhole-server) can pin them to the release. A manual run (workflow_dispatch) only moves `latest`.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: sctg/wormhole-mailbox
+            prefix: wormhole-mailbox
+            dockerfile: deploy/docker/Dockerfile
+            context: deploy/docker
+            build-args: SERVER=mailbox
+          - image: sctg/wormhole-relay
+            prefix: wormhole-relay
+            dockerfile: deploy/docker/Dockerfile
+            context: deploy/docker
+            build-args: SERVER=relay
+          - image: sctg/wormhole-page
+            prefix: wormhole-page
+            dockerfile: deploy/web/Containerfile
+            context: deploy/web
+            build-args: ''
+    uses: sctg-development/build-multi-arch-docker-action/.github/workflows/build.yml@v2
+    with:
+      dockerfile: ${{ matrix.dockerfile }}
+      context: ${{ matrix.context }}
+      image: ${{ matrix.image }}
+      build-args: ${{ matrix.build-args }}
+      # unique per image: it names the digest artifacts and the build cache scope
+      artifact-prefix: ${{ matrix.prefix }}-${{ github.run_id }}
+      tags: |
+        type=semver,pattern={{version}}
+        type=semver,pattern={{major}}.{{minor}}
+        type=raw,value=latest
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
